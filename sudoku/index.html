@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="description" content="Sudoku: điền số 1–9 để mỗi hàng, cột và ô 3×3 có đủ 1–9.">
+<title>Sudoku</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='3' y='3' width='26' height='26' rx='4' fill='%231f6feb'/%3E%3Ctext x='16' y='23' font-size='18' text-anchor='middle' fill='%23fff' font-family='Arial' font-weight='bold'%3E9%3C/text%3E%3C/svg%3E">
+<style>
+:root{
+    --bg:#e9e7e1; --panel:#f7f6f2; --text:#222; --muted:#666; --line:#c9c6bd;
+    --cell:#fff; --grid:#c4c0b6; --grid-box:#4a4741; --given:#1b1b1b; --user:#1f5fd0; --note:#6b6b6b;
+    --peer:#ecebe4; --same:#cfe0fb; --sel:#a9c8f7;
+    --btn:#fff; --btn-hover:#f0eee8; --accent:#1f6feb; --danger:#c62828;
+    --shadow:0 2px 10px rgba(0,0,0,.12);
+}
+@media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+        --bg:#14161a; --panel:#1d2026; --text:#eee; --muted:#9aa0a8; --line:#333842;
+        --cell:#1f2229; --grid:#3a3f49; --grid-box:#8a909b; --given:#f0f0f0; --user:#79b0ff; --note:#9aa0a8;
+        --peer:#272b33; --same:#26395a; --sel:#2f4e80;
+        --btn:#262a31; --btn-hover:#2f343c; --accent:#58a6ff; --danger:#ef5350;
+        --shadow:0 2px 10px rgba(0,0,0,.5);
+    }
+}
+:root[data-theme="dark"]{
+    --bg:#14161a; --panel:#1d2026; --text:#eee; --muted:#9aa0a8; --line:#333842;
+    --cell:#1f2229; --grid:#3a3f49; --grid-box:#8a909b; --given:#f0f0f0; --user:#79b0ff; --note:#9aa0a8;
+    --peer:#272b33; --same:#26395a; --sel:#2f4e80;
+    --btn:#262a31; --btn-hover:#2f343c; --accent:#58a6ff; --danger:#ef5350;
+    --shadow:0 2px 10px rgba(0,0,0,.5);
+}
+*{ box-sizing:border-box; margin:0; padding:0; }
+html{ -webkit-text-size-adjust:100%; }
+body{ background:var(--bg); color:var(--text); font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+      padding:12px 16px 24px; min-height:100vh; -webkit-tap-highlight-color:transparent; }
+.wrap{ width:100%; max-width:480px; margin:0 auto; }
+
+/* header: level, time, best */
+.top{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin-bottom:10px; }
+.stat{ background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:6px 10px; box-shadow:var(--shadow); min-width:0; }
+.stat.c{ text-align:center; }
+.stat.r{ text-align:right; }
+.stat .k{ font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; }
+.stat .v{ font-size:19px; font-weight:700; font-variant-numeric:tabular-nums; line-height:1.25; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+
+/* board */
+.board{ display:grid; grid-template-columns:repeat(9,1fr); width:100%; aspect-ratio:1; background:var(--grid-box);
+        border:2px solid var(--grid-box); border-radius:6px; overflow:hidden; gap:1px; user-select:none; -webkit-user-select:none; touch-action:manipulation; }
+.cell{ position:relative; background:var(--cell); display:flex; align-items:center; justify-content:center; cursor:pointer;
+       font-size:min(6vw, 27px); font-variant-numeric:tabular-nums; color:var(--user); }
+.cell.bt{ margin-top:1px; }                 /* the thick lines between 3x3 boxes: an extra 1px of grid */
+.cell.bl{ margin-left:1px; }
+.cell.given{ color:var(--given); font-weight:700; }
+.cell.peer{ background:var(--peer); }
+.cell.same{ background:var(--same); }
+.cell.sel{ background:var(--sel); }
+.cell .notes{ position:absolute; inset:2px; display:grid; grid-template-columns:repeat(3,1fr); grid-template-rows:repeat(3,1fr);
+              font-size:min(2.7vw, 12px); line-height:1; color:var(--note); font-weight:400; }
+.cell .notes span{ display:flex; align-items:center; justify-content:center; }
+.cell .notes span.hl{ color:var(--accent); font-weight:700; }
+.cell.win{ animation:win .6s ease both; }
+@keyframes win{ 50%{ background:var(--same); transform:scale(.9); } }
+
+/* number pad and tools */
+.pad{ display:grid; grid-template-columns:repeat(9,1fr); gap:5px; margin-top:12px; }
+.pad button{ padding:6px 0 4px; font-size:22px; font-weight:600; line-height:1.1; display:flex; flex-direction:column; align-items:center; }
+.pad button small{ font-size:10px; font-weight:400; color:var(--muted); }
+.pad button.used{ opacity:.35; }
+.tools{ display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-top:8px; }
+.tools button{ display:flex; flex-direction:column; align-items:center; gap:2px; font-size:12px; padding:7px 4px; }
+.tools button svg{ width:20px; height:20px; }
+.tools button.on{ background:var(--accent); color:#fff; border-color:var(--accent); }
+.bar{ display:flex; flex-wrap:wrap; gap:8px; margin-top:10px; }
+.bar button{ flex:1 1 auto; }
+button{ font:inherit; font-size:14px; color:var(--text); background:var(--btn); border:1px solid var(--line); border-radius:8px;
+        padding:9px 12px; cursor:pointer; box-shadow:var(--shadow); white-space:nowrap; }
+button:hover{ background:var(--btn-hover); }
+button:disabled{ opacity:.45; cursor:default; }
+button.icon{ flex:0 0 auto; width:42px; padding:9px 0; }
+#msg{ min-height:20px; text-align:center; color:var(--muted); font-size:14px; margin-top:10px; }
+
+/* dialogs */
+.dlg{ position:fixed; inset:0; background:rgba(0,0,0,.5); display:flex; align-items:center; justify-content:center; padding:16px; z-index:10; }
+.dlg[hidden]{ display:none; }
+.box{ background:var(--panel); color:var(--text); border-radius:12px; padding:18px; width:100%; max-width:360px; box-shadow:0 10px 40px rgba(0,0,0,.4); }
+.box h2{ font-size:18px; margin-bottom:10px; }
+.box p{ color:var(--muted); font-size:14px; line-height:1.45; margin-bottom:10px; }
+.box .acts{ display:flex; gap:8px; justify-content:flex-end; flex-wrap:wrap; }
+.box button.pri{ background:var(--accent); color:#fff; border-color:var(--accent); }
+table.hs{ width:100%; border-collapse:collapse; font-size:14px; margin-bottom:12px; font-variant-numeric:tabular-nums; }
+table.hs td{ padding:6px 4px; border-bottom:1px solid var(--line); }
+table.hs td.s{ text-align:right; font-weight:600; }
+table.hs td.d{ text-align:right; color:var(--muted); font-size:12px; }
+.rules{ font-size:14px; line-height:1.5; padding-left:18px; margin-bottom:12px; }
+.rules li{ margin-bottom:4px; }
+</style>
+</head>
+<body>
+<script src="../menu.js" data-game="sudoku"></script>
+<div class="wrap">
+    <div class="top">
+        <div class="stat"><div class="k">Cấp</div><div class="v" id="level">1</div></div>
+        <div class="stat c"><div class="k">Thời gian</div><div class="v" id="time">00:00</div></div>
+        <div class="stat r"><div class="k">Đã giải</div><div class="v" id="solved">0</div></div>
+    </div>
+
+    <div class="board" id="board" role="grid" aria-label="Bảng Sudoku 9×9"></div>
+
+    <div class="pad" id="pad" aria-label="Bàn số"></div>
+    <div class="tools">
+        <button id="undoBtn" title="Đi lại (Ctrl+Z)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14L4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/></svg>Đi lại</button>
+        <button id="eraseBtn" title="Xóa ô (Delete)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 20H8l-5-5 10-10 8 8-6 6"/><path d="M8 11l6 6"/></svg>Xóa</button>
+        <button id="notesBtn" title="Ghi chú (N)" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg><span id="notesTxt">Ghi chú: tắt</span></button>
+        <button id="hintBtn" title="Gợi ý: điền đúng một ô"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18h6M10 22h4"/><path d="M12 2a7 7 0 0 0-4 12.7V17h8v-2.3A7 7 0 0 0 12 2z"/></svg>Gợi ý</button>
+    </div>
+
+    <div id="msg"></div>
+
+    <div class="bar">
+        <button id="newBtn" title="Một câu đố khác cùng cấp">Câu khác</button>
+        <button id="restartBtn" title="Chơi lại câu đố này từ đầu">Chơi lại</button>
+        <button id="hsBtn">Thành tích</button>
+        <button id="helpBtn" class="icon" title="Luật chơi" aria-label="Luật chơi">?</button>
+    </div>
+</div>
+
+<div class="dlg" id="dlg" hidden><div class="box" id="dlgBox" role="dialog" aria-modal="true"></div></div>
+
+<script>
+'use strict';
+/* =========================================================
+   Sudoku: every row, column and 3x3 box holds 1-9 once.
+   Each puzzle is made here and has exactly one solution.
+   No checking while playing: when the board is full the game says
+   whether it is right, not where it is wrong.
+   No difficulty to choose: play starts at level 1 (easy) and each solved
+   puzzle moves up one level, with one number fewer given, down to
+   MIN_GIVENS (as few as a unique solution allows).
+   Saved in this browser only (localStorage): the game in progress and the
+   progress (level, puzzles solved, highest level).
+   ========================================================= */
+const FIRST_GIVENS = 42, MIN_GIVENS = 24;
+const givensFor = level => Math.max(MIN_GIVENS, FIRST_GIVENS + 1 - level);
+const KEY = {game: 'sudoku.game', progress: 'sudoku.progress'};
+const UNDO_MAX = 200;
+
+const $ = id => document.getElementById(id);
+const store = {
+    get(k){ try{ return JSON.parse(localStorage.getItem(k)); }catch(e){ return null; } },
+    set(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); return true; }catch(e){ return false; } },
+    del(k){ try{ localStorage.removeItem(k); }catch(e){} }
+};
+
+/* ---------- squares: row, column, box and the 20 peers of each ---------- */
+const ROW = i => Math.floor(i / 9), COL = i => i % 9, BOX = i => Math.floor(ROW(i) / 3) * 3 + Math.floor(COL(i) / 3);
+const PEERS = [];
+for(let i = 0; i < 81; i++){
+    const p = [];
+    for(let j = 0; j < 81; j++) if(j !== i && (ROW(j) === ROW(i) || COL(j) === COL(i) || BOX(j) === BOX(i))) p.push(j);
+    PEERS.push(p);
+}
+
+/* ---------- solver (bit masks, fewest candidates first) ---------- */
+const BITS = [];                      // mask -> list of digits
+for(let m = 0; m < 512; m++){ const d = []; for(let k = 0; k < 9; k++) if(m & (1 << k)) d.push(k + 1); BITS.push(d); }
+
+function shuffle(a){ for(let i = a.length - 1; i > 0; i--){ const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+
+/* number of solutions of g (stops at limit); with fill, the first solution
+   is written into g, trying digits in random order */
+function solve(g, limit, fill){
+    const rows = new Array(9).fill(0), cols = new Array(9).fill(0), boxes = new Array(9).fill(0);
+    for(let i = 0; i < 81; i++){
+        const v = g[i];
+        if(!v) continue;
+        const b = 1 << (v - 1);
+        if((rows[ROW(i)] | cols[COL(i)] | boxes[BOX(i)]) & b) return 0;   // a clash: no solution
+        rows[ROW(i)] |= b; cols[COL(i)] |= b; boxes[BOX(i)] |= b;
+    }
+    let count = 0;
+    const work = g.slice();
+    (function rec(){
+        let best = -1, bestMask = 0, bestN = 10;
+        for(let i = 0; i < 81; i++){
+            if(work[i]) continue;
+            const mask = ~(rows[ROW(i)] | cols[COL(i)] | boxes[BOX(i)]) & 511;
+            const n = BITS[mask].length;
+            if(n < bestN){ best = i; bestMask = mask; bestN = n; if(n < 2) break; }
+        }
+        if(best < 0){
+            count++;
+            if(fill && count === 1) for(let i = 0; i < 81; i++) g[i] = work[i];
+            return;
+        }
+        if(!bestN) return;
+        const digits = fill ? shuffle(BITS[bestMask].slice()) : BITS[bestMask];
+        const r = ROW(best), c = COL(best), x = BOX(best);
+        for(const d of digits){
+            const b = 1 << (d - 1);
+            work[best] = d; rows[r] |= b; cols[c] |= b; boxes[x] |= b;
+            rec();
+            work[best] = 0; rows[r] &= ~b; cols[c] &= ~b; boxes[x] &= ~b;
+            if(count >= limit) return;
+        }
+    })();
+    return count;
+}
+
+/* a puzzle with exactly one solution: a random full grid, then squares
+   emptied in random order while the solution stays unique */
+function makePuzzle(level){
+    const target = givensFor(level);
+    let best = null;
+    for(let attempt = 0; attempt < (target <= 26 ? 4 : 1); attempt++){
+        const sol = new Array(81).fill(0);
+        solve(sol, 1, true);
+        const puz = sol.slice();
+        let givens = 81;
+        for(const i of shuffle([...Array(81).keys()])){
+            if(givens <= target) break;
+            const keep = puz[i];
+            puz[i] = 0;
+            if(solve(puz, 2, false) !== 1) puz[i] = keep;
+            else givens--;
+        }
+        if(!best || givens < best.givens) best = {puz, sol, givens};
+        if(givens <= target) break;
+    }
+    return best;
+}
+
+/* ---------- state ---------- */
+let S;              // {level, givens[81], sol[81], v[81], notes[81] (bit masks), time, done, hints}
+function progress(){ const p = store.get(KEY.progress); return p && Number.isInteger(p.level) && p.level >= 1 ? p : {level: 1, solved: 0, top: 1}; }
+let sel = -1;
+let notesMode = false;
+let undoStack = [];
+
+function newGame(level){
+    say('Đang tạo câu đố…');
+    setTimeout(() => {                                // let the message paint first
+        const p = makePuzzle(level);
+        S = {level, givens: p.puz, sol: p.sol, v: p.puz.slice(), notes: new Array(81).fill(0), time: 0, done: false, hints: 0};
+        sel = -1; undoStack = [];
+        save(); render();
+        say('Cấp ' + level + ': ' + p.givens + ' số cho sẵn.');
+    }, 30);
+}
+
+/* ---------- moves ---------- */
+function snapshot(){ undoStack.push({v: S.v.slice(), notes: S.notes.slice()}); if(undoStack.length > UNDO_MAX) undoStack.shift(); }
+const editable = i => i >= 0 && !S.givens[i] && !S.done;
+
+function enter(d){
+    if(!editable(sel)) return;
+    const i = sel;
+    if(notesMode){
+        if(S.v[i]) return say('Ô đã có số: xóa số trước khi ghi chú.');
+        snapshot();
+        S.notes[i] ^= 1 << (d - 1);
+    }else{
+        snapshot();
+        if(S.v[i] === d){ S.v[i] = 0; }
+        else{
+            S.v[i] = d;
+            S.notes[i] = 0;
+            for(const j of PEERS[i]) S.notes[j] &= ~(1 << (d - 1));   // that digit can't be a candidate around it
+        }
+    }
+    after();
+}
+
+function erase(){
+    if(!editable(sel)) return;
+    if(!S.v[sel] && !S.notes[sel]) return;
+    snapshot();
+    S.v[sel] = 0; S.notes[sel] = 0;
+    after();
+}
+
+function undo(){
+    if(!undoStack.length || S.done) return;
+    const u = undoStack.pop();
+    S.v = u.v; S.notes = u.notes;
+    save(); render(); say('');
+}
+
+/* one correct square: the selected one if it is empty or wrong, else a random empty one */
+function hint(){
+    if(S.done) return;
+    let i = editable(sel) && S.v[sel] !== S.sol[sel] ? sel : -1;
+    if(i < 0){
+        const empty = [];
+        for(let j = 0; j < 81; j++) if(!S.v[j]) empty.push(j);
+        if(!empty.length) for(let j = 0; j < 81; j++) if(S.v[j] !== S.sol[j]) empty.push(j);
+        if(!empty.length) return;
+        i = empty[Math.floor(Math.random() * empty.length)];
+    }
+    snapshot();
+    const d = S.sol[i];
+    S.v[i] = d; S.notes[i] = 0;
+    for(const j of PEERS[i]) S.notes[j] &= ~(1 << (d - 1));
+    S.hints++;
+    sel = i;
+    after();
+    if(!S.done) say('Gợi ý: ' + d + ' ở hàng ' + (ROW(i) + 1) + ', cột ' + (COL(i) + 1) + '.');
+}
+
+function after(){
+    say('');
+    if(S.v.every(x => x)){
+        if(S.v.every((x, i) => x === S.sol[i])) return win();
+        say('Bảng đã đầy nhưng chưa đúng. Hãy kiểm tra lại.');
+    }
+    save(); render();
+}
+
+function win(){
+    S.done = true;
+    sel = -1;
+    const t = Math.floor(S.time);
+    // up one level (a puzzle solved again at an older level counts, but doesn't go back)
+    const p = progress();
+    p.solved = (p.solved || 0) + 1;
+    p.level = Math.max(p.level, S.level + 1);
+    p.top = Math.max(p.top || 1, p.level);
+    store.set(KEY.progress, p);
+    save(); render();
+    // a ripple across the board
+    document.querySelectorAll('.cell').forEach((c, i) => { c.style.animationDelay = ((ROW(i) + COL(i)) * 35) + 'ms'; c.classList.add('win'); });
+    say('Hoàn thành!');
+    const harder = givensFor(p.level) < givensFor(S.level);
+    setTimeout(() => openDlg('<h2>Hoàn thành cấp ' + S.level + '!</h2><p>Thời gian <b>' + fmt(t) + '</b>'
+        + (S.hints ? ', dùng ' + S.hints + ' gợi ý' : '') + '. Bạn đã giải ' + p.solved + ' câu.</p>'
+        + '<p>Tiếp theo: <b>cấp ' + p.level + '</b>' + (harder ? ', khó hơn một chút (' + givensFor(p.level) + ' số cho sẵn).' : ' (' + givensFor(p.level) + ' số cho sẵn).') + '</p>'
+        + '<div class="acts"><button id="dClose">Đóng</button><button class="pri" id="dNew">Câu tiếp theo</button></div>', () => {
+        $('dClose').onclick = closeDlg;
+        $('dNew').onclick = () => { closeDlg(); newGame(progress().level); };
+    }), 900);
+}
+
+/* ---------- drawing ---------- */
+const board = $('board'), cells = [];
+for(let i = 0; i < 81; i++){
+    const d = document.createElement('div');
+    d.className = 'cell';
+    d.setAttribute('role', 'gridcell');
+    d.addEventListener('click', () => { if(S && !S.done){ sel = sel === i ? -1 : i; render(); } });
+    board.appendChild(d);
+    cells.push(d);
+}
+const pad = $('pad'), padBtns = [];
+for(let d = 1; d <= 9; d++){
+    const b = document.createElement('button');
+    b.innerHTML = d + '<small></small>';
+    b.setAttribute('aria-label', 'Số ' + d);
+    b.addEventListener('click', () => enter(d));
+    pad.appendChild(b);
+    padBtns.push(b);
+}
+
+function render(){
+    const sv = sel >= 0 ? S.v[sel] : 0;
+    const count = new Array(10).fill(0);
+    for(let i = 0; i < 81; i++){
+        const c = cells[i], v = S.v[i];
+        count[v]++;
+        let cls = 'cell';
+        if(ROW(i) % 3 === 0 && ROW(i)) cls += ' bt';
+        if(COL(i) % 3 === 0 && COL(i)) cls += ' bl';
+        if(S.givens[i]) cls += ' given';
+        if(i === sel) cls += ' sel';
+        else if(sv && v === sv) cls += ' same';
+        else if(sel >= 0 && (ROW(i) === ROW(sel) || COL(i) === COL(sel) || BOX(i) === BOX(sel))) cls += ' peer';
+        if(c.className.replace(/ win/, '') !== cls){ c.className = cls; c.style.animationDelay = ''; }
+        const key = v ? 'v' + v : S.notes[i] ? 'n' + S.notes[i] + '/' + sv : '';
+        if(c.dataset.k === key) continue;
+        c.dataset.k = key;
+        if(v){ c.textContent = v; }
+        else if(S.notes[i]){
+            let h = '<div class="notes">';
+            for(let d = 1; d <= 9; d++) h += '<span' + (d === sv ? ' class="hl"' : '') + '>' + (S.notes[i] & (1 << (d - 1)) ? d : '') + '</span>';
+            c.innerHTML = h + '</div>';
+        }else c.textContent = '';
+        c.setAttribute('aria-label', 'Hàng ' + (ROW(i) + 1) + ', cột ' + (COL(i) + 1) + (v ? ': ' + v : ': trống'));
+    }
+    padBtns.forEach((b, k) => {
+        const left = Math.max(0, 9 - count[k + 1]);
+        b.querySelector('small').textContent = left;
+        b.classList.toggle('used', !left);
+        b.disabled = S.done;
+    });
+    $('level').textContent = S.level;
+    $('solved').textContent = progress().solved || 0;
+    $('undoBtn').disabled = !undoStack.length || S.done;
+    $('eraseBtn').disabled = $('hintBtn').disabled = S.done;
+    $('notesBtn').classList.toggle('on', notesMode);
+    $('notesBtn').setAttribute('aria-pressed', String(notesMode));
+    $('notesTxt').textContent = 'Ghi chú: ' + (notesMode ? 'bật' : 'tắt');
+    showTime();
+}
+
+function say(t){ $('msg').textContent = t || ''; }
+function fmt(t){ t = Math.floor(t); const h = Math.floor(t / 3600), m = Math.floor(t / 60) % 60, s = t % 60, p = n => String(n).padStart(2, '0'); return (h ? h + ':' + p(m) : p(m)) + ':' + p(s); }
+function showTime(){ $('time').textContent = fmt(S.time); }
+function when(t){ const d = new Date(t), p = n => String(n).padStart(2, '0'); return p(d.getDate()) + '/' + p(d.getMonth() + 1) + '/' + d.getFullYear(); }
+
+/* ---------- buttons and keys ---------- */
+$('undoBtn').onclick = undo;
+$('eraseBtn').onclick = erase;
+$('hintBtn').onclick = hint;
+$('notesBtn').onclick = () => { notesMode = !notesMode; render(); };
+$('newBtn').onclick = () => {
+    if(S.done) return newGame(progress().level);
+    const busy = S.v.some((x, i) => x && !S.givens[i]);
+    if(busy) return confirmBox('Câu khác?', 'Bỏ câu này và lấy một câu đố khác cùng cấp ' + S.level + '.', 'Câu khác', () => newGame(S.level));
+    newGame(S.level);
+};
+$('restartBtn').onclick = () => confirmBox('Chơi lại?', 'Xóa hết số và ghi chú bạn đã điền, giữ câu đố này.', 'Chơi lại', () => {
+    S.v = S.givens.slice(); S.notes = new Array(81).fill(0); S.time = 0; S.done = false; S.hints = 0;
+    sel = -1; undoStack = [];
+    save(); render(); say('Bắt đầu lại câu đố này.');
+});
+$('hsBtn').onclick = () => {
+    const p = progress();
+    openDlg('<h2>Thành tích (máy này)</h2><table class="hs">'
+        + '<tr><td>Cấp hiện tại</td><td class="s">' + p.level + '</td></tr>'
+        + '<tr><td>Số câu đã giải</td><td class="s">' + (p.solved || 0) + '</td></tr>'
+        + '<tr><td>Cấp cao nhất</td><td class="s">' + (p.top || p.level) + '</td></tr>'
+        + '</table><p>Cấp 1 có ' + givensFor(1) + ' số cho sẵn; mỗi cấp bớt một số, khó nhất ' + MIN_GIVENS + ' số (từ cấp ' + (FIRST_GIVENS + 1 - MIN_GIVENS) + ').</p><div class="acts">'
+        + '<button id="dClear">Chơi lại từ cấp 1</button><button class="pri" id="dClose">Đóng</button></div>', () => {
+        $('dClose').onclick = closeDlg;
+        $('dClear').onclick = () => confirmBox('Chơi lại từ cấp 1?', 'Cấp và số câu đã giải sẽ về 0. Câu đang chơi bị bỏ.', 'Về cấp 1', () => { store.del(KEY.progress); newGame(1); });
+    });
+};
+$('helpBtn').onclick = () => showHelp();
+
+function showHelp(){
+    openDlg('<h2>Luật chơi</h2><ul class="rules">'
+        + '<li>Điền số 1–9 vào các ô trống sao cho <b>mỗi hàng, mỗi cột và mỗi ô 3×3</b> có đủ 1–9, không lặp.</li>'
+        + '<li>Chạm vào ô rồi chạm số bên dưới. Chạm lại cùng số để xóa. Trên máy tính: gõ số, mũi tên để di chuyển, Delete để xóa.</li>'
+        + '<li><b>Ghi chú</b> (phím N): ghi các số có thể vào ô. Đặt một số sẽ tự xóa ghi chú số đó ở hàng, cột, ô 3×3.</li>'
+        + '<li>Trò chơi không báo số sai khi đang chơi; khi điền đầy bảng sẽ biết đúng hay chưa.</li>'
+        + '<li>Số nhỏ dưới mỗi nút là số lượng còn phải điền. Mỗi câu đố chỉ có một lời giải.</li>'
+        + '<li>Bắt đầu ở cấp 1 (dễ). Mỗi câu giải xong lên một cấp, khó hơn một chút.</li>'
+        + '<li>Ván đang chơi tự lưu trên máy này.</li>'
+        + '</ul><div class="acts"><button class="pri" id="dClose">Đã hiểu</button></div>', () => { $('dClose').onclick = closeDlg; });
+}
+
+document.addEventListener('keydown', e => {
+    if(window.gameMenuOpen && gameMenuOpen()) return;
+    if(!$('dlg').hidden){ if(e.key === 'Escape') closeDlg(); return; }
+    if(!S) return;
+    if((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z'){ e.preventDefault(); return undo(); }
+    if(e.ctrlKey || e.metaKey || e.altKey) return;
+    const d = /^Digit([1-9])$|^Numpad([1-9])$/.exec(e.code);
+    if(d){ e.preventDefault(); return enter(+(d[1] || d[2])); }
+    if(e.key === 'Backspace' || e.key === 'Delete' || e.code === 'Digit0' || e.code === 'Numpad0'){ e.preventDefault(); return erase(); }
+    if(e.key === 'n' || e.key === 'N'){ notesMode = !notesMode; return render(); }
+    const mv = {ArrowUp: -9, ArrowDown: 9, ArrowLeft: -1, ArrowRight: 1}[e.key];
+    if(mv && !S.done){
+        e.preventDefault();
+        if(sel < 0) sel = 40;
+        else{
+            const r = ROW(sel), c = COL(sel);
+            sel = mv === -9 ? ((r + 8) % 9) * 9 + c : mv === 9 ? ((r + 1) % 9) * 9 + c : mv === -1 ? r * 9 + (c + 8) % 9 : r * 9 + (c + 1) % 9;
+        }
+        render();
+    }
+});
+
+/* ---------- dialogs ---------- */
+function openDlg(html, init){ $('dlgBox').innerHTML = html; $('dlg').hidden = false; init && init(); }
+function closeDlg(){ $('dlg').hidden = true; $('dlgBox').innerHTML = ''; }
+function confirmBox(title, text, okText, ok){
+    openDlg('<h2>' + title + '</h2><p>' + text + '</p><div class="acts"><button id="dNo">Hủy</button><button class="pri" id="dYes">' + okText + '</button></div>', () => {
+        $('dNo').onclick = closeDlg;
+        $('dYes').onclick = () => { closeDlg(); ok(); };
+    });
+}
+$('dlg').addEventListener('click', e => { if(e.target === $('dlg')) closeDlg(); });
+
+/* ---------- time and saving ---------- */
+let ticks = 0;
+setInterval(() => {
+    if(!S || S.done || document.hidden || !$('dlg').hidden || (window.gameMenuOpen && gameMenuOpen())) return;
+    S.time += 1; showTime();
+    if(++ticks % 10 === 0) save();
+}, 1000);
+
+function save(){ store.set(KEY.game, S); }
+function valid(s){
+    const nums = (a, max) => Array.isArray(a) && a.length === 81 && a.every(x => Number.isInteger(x) && x >= 0 && x <= max);
+    return s && Number.isInteger(s.level) && s.level >= 1 && nums(s.givens, 9) && nums(s.sol, 9) && nums(s.v, 9) && nums(s.notes, 511) && Number.isFinite(s.time)
+        && s.sol.every(x => x) && s.givens.every((x, i) => !x || (x === s.sol[i] && s.v[i] === x));
+}
+document.addEventListener('visibilitychange', () => { if(document.hidden && S) save(); });
+
+/* ---------- start ---------- */
+const saved = store.get(KEY.game);
+if(valid(saved) && !saved.done){
+    S = saved; S.hints = S.hints || 0;
+    render(); say('Tiếp tục ván đang chơi.');
+}else{
+    const first = !saved && !store.get(KEY.progress);
+    S = null;
+    newGame(progress().level);
+    if(first) setTimeout(showHelp, 60);
+}
+</script>
+</body>
+</html>

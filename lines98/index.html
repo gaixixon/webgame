@@ -103,6 +103,7 @@ table.hs tr.me td{ color:var(--accent); }
 </style>
 </head>
 <body>
+<script src="../menu.js" data-game="lines98"></script>
 <div class="wrap">
     <div class="top">
         <div class="stat"><div class="k">Điểm</div><div class="v" id="score">0</div></div>
@@ -385,6 +386,7 @@ function setSoundIcon(){
 }
 
 document.addEventListener('keydown', e => {
+    if(window.gameMenuOpen && gameMenuOpen()) return;
     if(!$('dlg').hidden){ if(e.key === 'Escape' && !$('dName')) closeDlg(); return; }
     if((e.ctrlKey || e.metaKey) && e.key === 'z'){ e.preventDefault(); $('undoBtn').click(); }
 });
