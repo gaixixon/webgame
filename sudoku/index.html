@@ -11,76 +11,114 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Games">
-<meta name="theme-color" content="#e9e7e1" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#14161a" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#dff1ff" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0a1330" media="(prefers-color-scheme: dark)">
 <style>
+/* Ocean: indigo-to-teal background, white board with tinted boxes, teal for
+   your numbers, coral for the selection and matching numbers */
 :root{
-    --bg:#e9e7e1; --panel:#f7f6f2; --text:#222; --muted:#666; --line:#c9c6bd;
-    --cell:#fff; --grid:#c4c0b6; --grid-box:#4a4741; --given:#1b1b1b; --user:#1f5fd0; --note:#6b6b6b;
-    --peer:#ecebe4; --same:#cfe0fb; --sel:#a9c8f7;
-    --btn:#fff; --btn-hover:#f0eee8; --accent:#1f6feb; --danger:#c62828;
-    --shadow:0 2px 10px rgba(0,0,0,.12);
+    --bg1:#dff1ff; --bg2:#d3f7ef; --text:#0f172a; --muted:#5b6b82; --line:#cfe0ee;
+    --panel:#ffffff; --glass:rgba(255,255,255,.72); --glass-line:rgba(255,255,255,.95);
+    --cell:#ffffff; --box-alt:#f1f8ff; --grid:#d6e2ef; --frame:#4f5bd5;
+    --given:#16213a; --user:#0b9488; --note:#6b7a90;
+    --peer:#e3f1ff; --same:#ffe1d7; --same-text:#c2410c; --sel:#fff3ee; --coral:#ff7a59;
+    --accent:#0ea5a0; --accent2:#5b5fe0; --amber:#f59e0b; --danger:#e5484d;
+    --btn:#ffffff; --btn-hover:#f4f9ff; --bg:#e9f6fb;
+    --grad:linear-gradient(120deg, #5458d8, #0d9488);      /* white text on it in both themes */
+    --shadow:0 4px 14px rgba(30,64,120,.12); --shadow-lg:0 10px 30px rgba(30,64,120,.18);
 }
 @media (prefers-color-scheme: dark){
     :root:not([data-theme="light"]){
-        --bg:#14161a; --panel:#1d2026; --text:#eee; --muted:#9aa0a8; --line:#333842;
-        --cell:#1f2229; --grid:#3a3f49; --grid-box:#8a909b; --given:#f0f0f0; --user:#79b0ff; --note:#9aa0a8;
-        --peer:#272b33; --same:#26395a; --sel:#2f4e80;
-        --btn:#262a31; --btn-hover:#2f343c; --accent:#58a6ff; --danger:#ef5350;
-        --shadow:0 2px 10px rgba(0,0,0,.5);
+        --bg1:#0a1330; --bg2:#06302f; --text:#e6edf7; --muted:#93a3b8; --line:#22314d;
+        --panel:#111b33; --glass:rgba(17,27,51,.72); --glass-line:rgba(255,255,255,.08);
+        --cell:#0f1a31; --box-alt:#122340; --grid:#203152; --frame:#6c72f0;
+        --given:#f1f5fb; --user:#34d6c3; --note:#8fa0b8;
+        --peer:#16294a; --same:#4a2a22; --same-text:#ffb199; --sel:#3a241d; --coral:#ff8a6b;
+        --accent:#2dd4bf; --accent2:#7c80ff; --amber:#fbbf24; --danger:#ff6b6b;
+        --btn:#16223f; --btn-hover:#1c2b4f; --bg:#0d1a33;
+        --shadow:0 4px 14px rgba(0,0,0,.4); --shadow-lg:0 10px 30px rgba(0,0,0,.5);
     }
 }
 :root[data-theme="dark"]{
-    --bg:#14161a; --panel:#1d2026; --text:#eee; --muted:#9aa0a8; --line:#333842;
-    --cell:#1f2229; --grid:#3a3f49; --grid-box:#8a909b; --given:#f0f0f0; --user:#79b0ff; --note:#9aa0a8;
-    --peer:#272b33; --same:#26395a; --sel:#2f4e80;
-    --btn:#262a31; --btn-hover:#2f343c; --accent:#58a6ff; --danger:#ef5350;
-    --shadow:0 2px 10px rgba(0,0,0,.5);
+    --bg1:#0a1330; --bg2:#06302f; --text:#e6edf7; --muted:#93a3b8; --line:#22314d;
+    --panel:#111b33; --glass:rgba(17,27,51,.72); --glass-line:rgba(255,255,255,.08);
+    --cell:#0f1a31; --box-alt:#122340; --grid:#203152; --frame:#6c72f0;
+    --given:#f1f5fb; --user:#34d6c3; --note:#8fa0b8;
+    --peer:#16294a; --same:#4a2a22; --same-text:#ffb199; --sel:#3a241d; --coral:#ff8a6b;
+    --accent:#2dd4bf; --accent2:#7c80ff; --amber:#fbbf24; --danger:#ff6b6b;
+    --btn:#16223f; --btn-hover:#1c2b4f; --bg:#0d1a33;
+    --shadow:0 4px 14px rgba(0,0,0,.4); --shadow-lg:0 10px 30px rgba(0,0,0,.5);
 }
 *{ box-sizing:border-box; margin:0; padding:0; }
-html{ -webkit-text-size-adjust:100%; }
-body{ background:var(--bg); color:var(--text); font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+html{ -webkit-text-size-adjust:100%; background:var(--bg2); }
+body{ background:linear-gradient(165deg, var(--bg1) 0%, var(--bg2) 100%); color:var(--text);
+      font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
       padding:12px 16px 24px; min-height:100vh; -webkit-tap-highlight-color:transparent; }
 .wrap{ width:100%; max-width:480px; margin:0 auto; }
 
-/* header: level, time, best */
-.top{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin-bottom:10px; }
-.stat{ background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:6px 10px; box-shadow:var(--shadow); min-width:0; }
-.stat.c{ text-align:center; }
-.stat.r{ text-align:right; }
-.stat .k{ font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; }
-.stat .v{ font-size:19px; font-weight:700; font-variant-numeric:tabular-nums; line-height:1.25; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+/* header: level badge, timer, puzzles solved; then the progress bar */
+.top{ display:flex; align-items:center; gap:8px; margin-bottom:10px; }
+.badge{ display:flex; align-items:baseline; gap:6px; padding:7px 14px; border-radius:999px; color:#fff; font-weight:800;
+        background:var(--grad); box-shadow:var(--shadow); }
+.badge .k{ font-size:12px; font-weight:600; opacity:.9; text-transform:uppercase; letter-spacing:.05em; }
+.badge #level{ font-size:20px; line-height:1; font-variant-numeric:tabular-nums; }
+.chip{ display:flex; align-items:center; gap:6px; padding:7px 12px; border-radius:999px; background:var(--glass); border:1px solid var(--glass-line);
+       box-shadow:var(--shadow); font-weight:700; font-variant-numeric:tabular-nums; -webkit-backdrop-filter:blur(8px); backdrop-filter:blur(8px); }
+.chip svg{ width:16px; height:16px; flex:none; }
+.chip.time{ margin-left:auto; font-size:17px; }
+.chip.time svg{ color:var(--accent2); }
+.chip.won{ font-size:15px; }
+.chip.won svg{ color:var(--accent); }
+.chip.won small{ font-weight:500; color:var(--muted); font-size:12px; }
+.progress{ height:8px; border-radius:999px; background:var(--glass); border:1px solid var(--glass-line); overflow:hidden; margin-bottom:10px; }
+.progress div{ height:100%; width:0; border-radius:999px; background:linear-gradient(90deg, var(--accent), var(--accent2)); transition:width .35s ease; }
 
-/* board */
-.board{ display:grid; grid-template-columns:repeat(9,1fr); width:100%; aspect-ratio:1; background:var(--grid-box);
-        border:2px solid var(--grid-box); border-radius:6px; overflow:hidden; gap:1px; user-select:none; -webkit-user-select:none; touch-action:manipulation; }
+/* board: a raised card; thin light lines inside the boxes, coloured lines between them */
+.board{ display:grid; grid-template-columns:repeat(9,1fr); width:100%; aspect-ratio:1; background:var(--frame); padding:3px;
+        border-radius:14px; box-shadow:var(--shadow-lg); user-select:none; -webkit-user-select:none; touch-action:manipulation; overflow:hidden; }
 .cell{ position:relative; background:var(--cell); display:flex; align-items:center; justify-content:center; cursor:pointer;
-       font-size:min(6vw, 27px); font-variant-numeric:tabular-nums; color:var(--user); }
-.cell.bt{ margin-top:1px; }                 /* the thick lines between 3x3 boxes: an extra 1px of grid */
-.cell.bl{ margin-left:1px; }
-.cell.given{ color:var(--given); font-weight:700; }
+       box-shadow:inset 0 0 0 .5px var(--grid); font-size:min(6.2vw, 28px); font-weight:600; font-variant-numeric:tabular-nums; color:var(--user);
+       transition:background-color .15s; }
+.cell.alt{ background:var(--box-alt); }
+.cell.bt{ margin-top:2px; }                 /* the coloured lines between 3x3 boxes: the frame showing through */
+.cell.bl{ margin-left:2px; }
+.cell.given{ color:var(--given); font-weight:800; }
 .cell.peer{ background:var(--peer); }
-.cell.same{ background:var(--same); }
-.cell.sel{ background:var(--sel); }
+.cell.same{ background:var(--same); color:var(--same-text); }
+.cell.same.given{ color:var(--same-text); }
+.cell.sel{ background:var(--sel); box-shadow:inset 0 0 0 2.5px var(--coral), 0 0 14px rgba(255,122,89,.45); z-index:1; border-radius:3px; }
 .cell .notes{ position:absolute; inset:2px; display:grid; grid-template-columns:repeat(3,1fr); grid-template-rows:repeat(3,1fr);
-              font-size:min(2.7vw, 12px); line-height:1; color:var(--note); font-weight:400; }
+              font-size:min(2.7vw, 12px); line-height:1; color:var(--note); font-weight:500; }
 .cell .notes span{ display:flex; align-items:center; justify-content:center; }
-.cell .notes span.hl{ color:var(--accent); font-weight:700; }
+.cell .notes span.hl{ color:var(--coral); font-weight:800; }
+.cell.flash{ animation:flash .7s ease; }
+@keyframes flash{ 30%{ background:var(--accent); color:#fff; } }
 .cell.win{ animation:win .6s ease both; }
-@keyframes win{ 50%{ background:var(--same); transform:scale(.9); } }
+@keyframes win{ 50%{ background:var(--accent); color:#fff; transform:scale(.88); } }
+.cell.placed{ animation:placed .22s ease-out; }
+@keyframes placed{ from{ transform:scale(.6); } to{ transform:scale(1); } }
 
-/* number pad and tools */
-.pad{ display:grid; grid-template-columns:repeat(9,1fr); gap:5px; margin-top:12px; }
-.pad button{ padding:6px 0 4px; font-size:22px; font-weight:600; line-height:1.1; display:flex; flex-direction:column; align-items:center; }
-.pad button small{ font-size:10px; font-weight:400; color:var(--muted); }
-.pad button.used{ opacity:.35; }
-.tools{ display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-top:8px; }
-.tools button{ display:flex; flex-direction:column; align-items:center; gap:2px; font-size:12px; padding:7px 4px; }
-.tools button svg{ width:20px; height:20px; }
-.tools button.on{ background:var(--accent); color:#fff; border-color:var(--accent); }
+/* number pad: round buttons that press down; a number all placed gets a ✓ */
+.pad{ display:grid; grid-template-columns:repeat(9,1fr); gap:5px; margin-top:14px; }
+.pad button{ padding:7px 0 5px; border-radius:12px; font-size:23px; font-weight:800; line-height:1.05; color:var(--accent2);
+             display:flex; flex-direction:column; align-items:center; border:1px solid var(--glass-line);
+             box-shadow:0 3px 0 var(--line), var(--shadow); transition:transform .06s, box-shadow .06s; }
+.pad button:active:not(:disabled){ transform:translateY(3px); box-shadow:0 0 0 var(--line), var(--shadow); }
+.pad button small{ font-size:10px; font-weight:600; color:var(--muted); }
+.pad button.used{ background:var(--grad); color:#fff; opacity:.55; }
+.pad button.used small{ color:#fff; }
+.tools{ display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-top:10px; }
+.tools button{ display:flex; flex-direction:column; align-items:center; gap:3px; font-size:12px; font-weight:600; padding:8px 4px; border-radius:12px; }
+.tools button svg{ width:22px; height:22px; }
+#undoBtn svg{ color:var(--accent2); }
+#eraseBtn svg{ color:var(--coral); }
+#notesBtn svg{ color:var(--amber); }
+#hintBtn svg{ color:var(--amber); }
+.tools button.on{ background:linear-gradient(160deg, var(--amber), #f97316); color:#fff; border-color:transparent; box-shadow:0 0 16px rgba(245,158,11,.55); }
+.tools button.on svg{ color:#fff; }
 .bar{ display:flex; flex-wrap:wrap; gap:8px; margin-top:10px; }
-.bar button{ flex:1 1 auto; }
-button{ font:inherit; font-size:14px; color:var(--text); background:var(--btn); border:1px solid var(--line); border-radius:8px;
+.bar button{ flex:1 1 auto; border-radius:999px; }
+button{ font:inherit; font-size:14px; color:var(--text); background:var(--btn); border:1px solid var(--line); border-radius:10px;
         padding:9px 12px; cursor:pointer; box-shadow:var(--shadow); white-space:nowrap; }
 button:hover{ background:var(--btn-hover); }
 button:disabled{ opacity:.45; cursor:default; }
@@ -90,33 +128,46 @@ button.icon{ flex:0 0 auto; width:42px; padding:9px 0; }
 /* phones: the board almost edge to edge (2px each side, clear of the notch in landscape) */
 @media (max-width:520px){
     .board{ width:calc(100vw - 4px - env(safe-area-inset-left) - env(safe-area-inset-right));
-            margin-left:calc(50% - 50vw + 2px + env(safe-area-inset-left)); border-radius:0; }
+            margin-left:calc(50% - 50vw + 2px + env(safe-area-inset-left)); border-radius:10px; }
 }
 
+/* confetti when a puzzle is solved */
+#confetti{ position:fixed; inset:0; width:100%; height:100%; pointer-events:none; z-index:40; }
+
 /* dialogs */
-.dlg{ position:fixed; inset:0; background:rgba(0,0,0,.5); display:flex; align-items:center; justify-content:center; padding:16px; z-index:10; }
+.dlg{ position:fixed; inset:0; background:rgba(8,15,35,.55); display:flex; align-items:center; justify-content:center; padding:16px; z-index:30; }
 .dlg[hidden]{ display:none; }
-.box{ background:var(--panel); color:var(--text); border-radius:12px; padding:18px; width:100%; max-width:360px; box-shadow:0 10px 40px rgba(0,0,0,.4); }
-.box h2{ font-size:18px; margin-bottom:10px; }
+.box{ background:var(--panel); color:var(--text); border-radius:18px; padding:18px; width:100%; max-width:360px; box-shadow:0 20px 50px rgba(0,0,0,.35); overflow:hidden; }
+.box h2{ font-size:19px; margin-bottom:10px; }
 .box p{ color:var(--muted); font-size:14px; line-height:1.45; margin-bottom:10px; }
 .box .acts{ display:flex; gap:8px; justify-content:flex-end; flex-wrap:wrap; }
-.box button.pri{ background:var(--accent); color:#fff; border-color:var(--accent); }
+.box button{ border-radius:999px; }
+.box button.pri{ background:var(--grad); color:#fff; border-color:transparent; }
+.box .band{ margin:-18px -18px 14px; padding:18px; color:#fff; background:var(--grad); }
+.box .band h2{ margin:0 0 2px; font-size:21px; }
+.box .band p{ color:rgba(255,255,255,.9); margin:0; }
+.box .big{ display:flex; gap:10px; margin-bottom:12px; }
+.box .big div{ flex:1; background:var(--bg); border-radius:12px; padding:8px 10px; }
+.box .big b{ display:block; font-size:20px; font-variant-numeric:tabular-nums; }
+.box .big span{ font-size:12px; color:var(--muted); }
 table.hs{ width:100%; border-collapse:collapse; font-size:14px; margin-bottom:12px; font-variant-numeric:tabular-nums; }
 table.hs td{ padding:6px 4px; border-bottom:1px solid var(--line); }
-table.hs td.s{ text-align:right; font-weight:600; }
+table.hs td.s{ text-align:right; font-weight:700; color:var(--accent2); }
 table.hs td.d{ text-align:right; color:var(--muted); font-size:12px; }
 .rules{ font-size:14px; line-height:1.5; padding-left:18px; margin-bottom:12px; }
 .rules li{ margin-bottom:4px; }
+@media (prefers-reduced-motion: reduce){ .cell, .pad button, .progress div{ transition:none; } .cell.flash, .cell.win, .cell.placed{ animation:none; } }
 </style>
 </head>
 <body>
 <script src="../menu.js" data-game="sudoku"></script>
 <div class="wrap">
     <div class="top">
-        <div class="stat"><div class="k">Cấp</div><div class="v" id="level">1</div></div>
-        <div class="stat c"><div class="k">Thời gian</div><div class="v" id="time">00:00</div></div>
-        <div class="stat r"><div class="k">Đã giải</div><div class="v" id="solved">0</div></div>
+        <div class="badge" title="Cấp hiện tại"><span class="k">Cấp</span><span id="level">1</span></div>
+        <div class="chip time" title="Thời gian"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2.5M9 2h6"/></svg><span id="time">00:00</span></div>
+        <div class="chip won" title="Số câu đã giải"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg><span id="solved">0</span><small>đã giải</small></div>
     </div>
+    <div class="progress" title="Đã điền"><div id="prog"></div></div>
 
     <div class="board" id="board" role="grid" aria-label="Bảng Sudoku 9×9"></div>
 
@@ -279,6 +330,7 @@ function enter(d){
             S.v[i] = d;
             S.notes[i] = 0;
             for(const j of PEERS[i]) S.notes[j] &= ~(1 << (d - 1));   // that digit can't be a candidate around it
+            justFilled = i;
         }
     }
     after();
@@ -316,17 +368,35 @@ function hint(){
     for(const j of PEERS[i]) S.notes[j] &= ~(1 << (d - 1));
     S.hints++;
     sel = i;
+    justFilled = i;
     after();
     if(!S.done) say('Gợi ý: ' + d + ' ở hàng ' + (ROW(i) + 1) + ', cột ' + (COL(i) + 1) + '.');
 }
 
 function after(){
     say('');
+    const i = justFilled;
+    justFilled = -1;
     if(S.v.every(x => x)){
-        if(S.v.every((x, i) => x === S.sol[i])) return win();
+        if(S.v.every((x, j) => x === S.sol[j])) return win();
         say('Bảng đã đầy nhưng chưa đúng. Hãy kiểm tra lại.');
     }
     save(); render();
+    if(i >= 0) celebrate(i);
+}
+
+/* the square just filled pops in; a row, column or box it completes flashes */
+let justFilled = -1;
+function celebrate(i){
+    const pop = (c, cls) => { c.classList.remove(cls); void c.offsetWidth; c.classList.add(cls); setTimeout(() => c.classList.remove(cls), 750); };
+    pop(cells[i], 'placed');
+    const units = [[], [], []];
+    for(let j = 0; j < 81; j++){
+        if(ROW(j) === ROW(i)) units[0].push(j);
+        if(COL(j) === COL(i)) units[1].push(j);
+        if(BOX(j) === BOX(i)) units[2].push(j);
+    }
+    for(const u of units) if(u.every(j => S.v[j])) u.forEach((j, k) => setTimeout(() => pop(cells[j], 'flash'), k * 25));
 }
 
 function win(){
@@ -343,14 +413,44 @@ function win(){
     // a ripple across the board
     document.querySelectorAll('.cell').forEach((c, i) => { c.style.animationDelay = ((ROW(i) + COL(i)) * 35) + 'ms'; c.classList.add('win'); });
     say('Hoàn thành!');
+    confetti();
     const harder = givensFor(p.level) < givensFor(S.level);
-    setTimeout(() => openDlg('<h2>Hoàn thành cấp ' + S.level + '!</h2><p>Thời gian <b>' + fmt(t) + '</b>'
-        + (S.hints ? ', dùng ' + S.hints + ' gợi ý' : '') + '. Bạn đã giải ' + p.solved + ' câu.</p>'
+    setTimeout(() => openDlg('<div class="band"><h2>Hoàn thành cấp ' + S.level + '!</h2><p>Tuyệt vời, bạn đã giải ' + p.solved + ' câu.</p></div>'
+        + '<div class="big"><div><b>' + fmt(t) + '</b><span>thời gian</span></div><div><b>' + S.hints + '</b><span>gợi ý đã dùng</span></div></div>'
         + '<p>Tiếp theo: <b>cấp ' + p.level + '</b>' + (harder ? ', khó hơn một chút (' + givensFor(p.level) + ' số cho sẵn).' : ' (' + givensFor(p.level) + ' số cho sẵn).') + '</p>'
         + '<div class="acts"><button id="dClose">Đóng</button><button class="pri" id="dNew">Câu tiếp theo</button></div>', () => {
         $('dClose').onclick = closeDlg;
         $('dNew').onclick = () => { closeDlg(); newGame(progress().level); };
     }), 900);
+}
+
+/* confetti over the page for ~2.5 s (none with reduced motion) */
+function confetti(){
+    if(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const cv = document.createElement('canvas');
+    cv.id = 'confetti';
+    document.body.appendChild(cv);
+    const dpr = Math.min(window.devicePixelRatio || 1, 2), W = innerWidth, H = innerHeight;
+    cv.width = W * dpr; cv.height = H * dpr;
+    const ctx = cv.getContext('2d');
+    ctx.scale(dpr, dpr);
+    const colors = ['#0ea5a0', '#5b5fe0', '#ff7a59', '#f59e0b', '#34d6c3', '#ec4899', '#22c55e'];
+    const parts = Array.from({length: 160}, () => ({
+        x: W / 2 + (Math.random() - .5) * W * .3, y: H * .45, vx: (Math.random() - .5) * 13, vy: -6 - Math.random() * 11,
+        w: 6 + Math.random() * 6, h: 4 + Math.random() * 6, r: Math.random() * 6, vr: (Math.random() - .5) * .35,
+        c: colors[Math.floor(Math.random() * colors.length)]
+    }));
+    const t0 = performance.now();
+    (function frame(now){
+        const t = now - t0;
+        ctx.clearRect(0, 0, W, H);
+        ctx.globalAlpha = t > 1800 ? Math.max(0, 1 - (t - 1800) / 700) : 1;
+        for(const q of parts){
+            q.vy += .32; q.vx *= .99; q.x += q.vx; q.y += q.vy; q.r += q.vr;
+            ctx.save(); ctx.translate(q.x, q.y); ctx.rotate(q.r); ctx.fillStyle = q.c; ctx.fillRect(-q.w / 2, -q.h / 2, q.w, q.h); ctx.restore();
+        }
+        if(t < 2500) requestAnimationFrame(frame); else cv.remove();
+    })(t0);
 }
 
 /* ---------- drawing ---------- */
@@ -366,7 +466,7 @@ for(let i = 0; i < 81; i++){
 const pad = $('pad'), padBtns = [];
 for(let d = 1; d <= 9; d++){
     const b = document.createElement('button');
-    b.innerHTML = d + '<small></small>';
+    b.innerHTML = '<span>' + d + '</span><small></small>';
     b.setAttribute('aria-label', 'Số ' + d);
     b.addEventListener('click', () => enter(d));
     pad.appendChild(b);
@@ -379,14 +479,15 @@ function render(){
     for(let i = 0; i < 81; i++){
         const c = cells[i], v = S.v[i];
         count[v]++;
-        let cls = 'cell';
+        let cls = 'cell' + (BOX(i) % 2 ? ' alt' : '');
         if(ROW(i) % 3 === 0 && ROW(i)) cls += ' bt';
         if(COL(i) % 3 === 0 && COL(i)) cls += ' bl';
         if(S.givens[i]) cls += ' given';
         if(i === sel) cls += ' sel';
         else if(sv && v === sv) cls += ' same';
         else if(sel >= 0 && (ROW(i) === ROW(sel) || COL(i) === COL(sel) || BOX(i) === BOX(sel))) cls += ' peer';
-        if(c.className.replace(/ win/, '') !== cls){ c.className = cls; c.style.animationDelay = ''; }
+        const anim = (c.className.match(/ (win|flash|placed)/g) || []).join('');
+        if(c.className.replace(/ (win|flash|placed)/g, '') !== cls){ c.className = cls + anim; if(!anim) c.style.animationDelay = ''; }
         const key = v ? 'v' + v : S.notes[i] ? 'n' + S.notes[i] + '/' + sv : '';
         if(c.dataset.k === key) continue;
         c.dataset.k = key;
@@ -400,11 +501,13 @@ function render(){
     }
     padBtns.forEach((b, k) => {
         const left = Math.max(0, 9 - count[k + 1]);
-        b.querySelector('small').textContent = left;
+        b.querySelector('small').textContent = left ? left : '✓';
         b.classList.toggle('used', !left);
         b.disabled = S.done;
     });
     $('level').textContent = S.level;
+    const toFill = S.givens.filter(x => !x).length, filled = S.v.filter((x, i) => x && !S.givens[i]).length;
+    $('prog').style.width = (toFill ? filled / toFill * 100 : 100) + '%';
     $('solved').textContent = progress().solved || 0;
     $('undoBtn').disabled = !undoStack.length || S.done;
     $('eraseBtn').disabled = $('hintBtn').disabled = S.done;
