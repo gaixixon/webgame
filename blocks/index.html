@@ -64,6 +64,12 @@ body{ background:var(--bg); color:var(--text); font-family:system-ui,-apple-syst
 .cell.land{ animation:land .18s ease-out; }
 @keyframes land{ from{ transform:scale(.7); } to{ transform:scale(1); } }
 
+/* the hint: the piece ringed in the tray, its spot pulsing on the board */
+.piece.hinted{ outline:3px solid var(--accent); outline-offset:7px; border-radius:4px; animation:ring 1s ease-in-out infinite; }
+@keyframes ring{ 50%{ outline-offset:3px; } }
+.cell.sugg{ animation:sugg .9s ease-in-out infinite; }
+@keyframes sugg{ 50%{ opacity:.45; } }
+
 /* the 3 pieces */
 .tray{ display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-top:14px; height:min(30vw, 140px); touch-action:none; }
 .slot{ display:flex; align-items:center; justify-content:center; background:var(--panel); border:1px solid var(--line); border-radius:10px; }
@@ -117,6 +123,7 @@ button.icon{ flex:0 0 auto; width:42px; padding:9px 0; }
     <div class="bar">
         <button id="newBtn">Ván mới</button>
         <button id="undoBtn" disabled title="Đi lại nước vừa rồi (1 lần)">↶ Đi lại</button>
+        <button id="hintBtn" title="Gợi ý nước đặt tốt nhất (phím H)"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-2px"><path d="M9 18h6M10 22h4"/><path d="M12 2a7 7 0 0 0-4 12.7V17h8v-2.3A7 7 0 0 0 12 2z"/></svg> Gợi ý</button>
         <button id="helpBtn" class="icon" title="Luật chơi" aria-label="Luật chơi">?</button>
     </div>
 </div>
@@ -215,6 +222,8 @@ async function place(k, r, c){
     const p = S.tray[k];
     if(!p || !fits(S.grid, p.s, r, c)) return false;
     busy = true;
+    clearHint();
+    say('');
     undo = JSON.parse(JSON.stringify(S));
     const landed = p.s.map(([dr, dc]) => (r + dr) * N + c + dc);
     landed.forEach(i => S.grid[i] = p.c + 1);
@@ -232,7 +241,6 @@ async function place(k, r, c){
         gone.forEach(i => S.grid[i] = 0);
         say((n > 1 ? 'Ăn ' + n + ' hàng cùng lúc! ' : 'Ăn 1 hàng. ') + (S.combo > 1 ? 'Combo ×' + S.combo + '.' : ''));
     }else{
-        if(S.combo) say('');
         S.combo = 0;
     }
     S.score += gain;
@@ -244,6 +252,124 @@ async function place(k, r, c){
     save(); render();
     if(S.over) setTimeout(gameOver, 350);
     return true;
+}
+
+/* ---------- hint: the best placement ----------
+   Plans all the pieces left in the tray together (every order, every
+   position) so that the first one doesn't block the others. A beam keeps
+   the BEAM most promising boards after each piece; when it can't place them
+   all, an exhaustive search checks whether some order still can. Boards are
+   scored by the points made on the way plus how good the board left is:
+   empty squares in open areas (no lone holes) and room for the big shapes. */
+const BEAM = 60;
+const BIG = [
+    [[0, 0], [0, 1], [0, 2], [1, 0], [1, 1], [1, 2], [2, 0], [2, 1], [2, 2]],
+    [[0, 0], [0, 1], [0, 2], [0, 3], [0, 4]], [[0, 0], [1, 0], [2, 0], [3, 0], [4, 0]],
+    [[0, 0], [1, 0], [2, 0], [2, 1], [2, 2]], [[0, 0], [0, 1], [0, 2], [1, 0], [2, 0]]     // big L, two of its turns
+];
+/* place s at (r, c) on a copy: the new grid and the points it makes */
+function simulate(grid, s, r, c, combo){
+    const g = grid.slice();
+    for(const [dr, dc] of s) g[(r + dr) * N + c + dc] = 1;
+    const units = fullUnits(g);
+    let gain = s.length;
+    if(units.length){
+        combo++;
+        gain += 10 * units.length * (units.length + 1) / 2 * combo;
+        for(const u of units) for(const i of u) g[i] = 0;
+    }else combo = 0;
+    return {g, gain, combo, cleared: units.length};
+}
+function boardValue(g){
+    let empty = 0, lone = 0, edges = 0;
+    for(let i = 0; i < N * N; i++){
+        const r = Math.floor(i / N), c = i % N;
+        if(g[i]){
+            if(c < N - 1 && !g[i + 1]) edges++;
+            if(r < N - 1 && !g[i + N]) edges++;
+            continue;
+        }
+        empty++;
+        if(c < N - 1 && g[i + 1]) edges++;
+        if(r < N - 1 && g[i + N]) edges++;
+        const open = (c > 0 && !g[i - 1]) + (c < N - 1 && !g[i + 1]) + (r > 0 && !g[i - N]) + (r < N - 1 && !g[i + N]);
+        if(!open) lone++;
+    }
+    let room = 0;
+    for(const s of BIG) if(fitsAnywhere(g, s)) room++;
+    return 6 * empty - 30 * lone - 4 * edges + 25 * room;
+}
+function planHint(){
+    const left = S.tray.map((p, k) => p ? k : -1).filter(k => k >= 0);
+    if(!left.length) return null;
+    // states: {g, used (bit set of tray slots), first {k, r, c}, gain, combo}
+    let level = [{g: S.grid.map(v => v ? 1 : 0), used: 0, first: null, gain: 0, combo: S.combo}];
+    let best = null;
+    for(let depth = 0; depth < left.length; depth++){
+        const next = [], seen = new Set();
+        for(const st of level){
+            for(const k of left){
+                if(st.used & (1 << k)) continue;
+                const s = S.tray[k].s;
+                for(let r = 0; r < N; r++) for(let c = 0; c < N; c++){
+                    if(!fits(st.g, s, r, c)) continue;
+                    const sim = simulate(st.g, s, r, c, st.combo);
+                    const used = st.used | (1 << k);
+                    const key = used + ':' + sim.g.join('');
+                    if(seen.has(key)) continue;           // the same board reached another way
+                    seen.add(key);
+                    const ns = {g: sim.g, used, first: st.first || {k, r, c}, gain: st.gain + sim.gain, combo: sim.combo};
+                    ns.value = 3 * ns.gain + boardValue(sim.g);
+                    next.push(ns);
+                }
+            }
+        }
+        if(!next.length) break;
+        next.sort((a, b) => b.value - a.value);
+        level = next.slice(0, BEAM);
+        best = {first: level[0].first, all: depth === left.length - 1, depth: depth + 1};
+    }
+    // the beam couldn't place them all: is there an order that can?
+    if(best && !best.all){
+        const order = exhaustive(S.grid.map(v => v ? 1 : 0), left);
+        if(order) best = {first: order, all: true, depth: left.length};
+    }
+    return best;
+}
+/* any way to place every piece in `left` (first move), or null */
+function exhaustive(g, left){
+    if(!left.length) return true;
+    for(const k of left){
+        const s = S.tray[k].s, rest = left.filter(x => x !== k);
+        for(let r = 0; r < N; r++) for(let c = 0; c < N; c++){
+            if(!fits(g, s, r, c)) continue;
+            if(exhaustive(simulate(g, s, r, c, 0).g, rest)) return {k, r, c};
+        }
+    }
+    return null;
+}
+
+let hintTimer = null, hintCells = [];
+function clearHint(){
+    clearTimeout(hintTimer);
+    hintCells.forEach(i => cells[i].classList.remove('ghost', 'hint', 'sugg'));
+    hintCells = [];
+    document.querySelectorAll('.piece.hinted').forEach(el => el.classList.remove('hinted'));
+}
+function hint(){
+    if(busy || S.over || drag || !$('dlg').hidden) return;
+    clearHint();
+    const h = planHint();
+    if(!h) return say('Không còn khối nào đặt được.');
+    const {k, r, c} = h.first;
+    const s = S.tray[k].s;
+    const g = S.grid.slice();
+    for(const [dr, dc] of s){ const i = (r + dr) * N + c + dc; g[i] = 1; hintCells.push(i); cells[i].classList.add('ghost', 'sugg'); }
+    for(const u of fullUnits(g)) for(const i of u){ if(!hintCells.includes(i)) hintCells.push(i); cells[i].classList.add('hint', 'sugg'); }
+    const el = document.querySelector('.piece[data-k="' + k + '"]');
+    if(el) el.classList.add('hinted');
+    say('Gợi ý: đặt khối này vào hàng ' + (r + 1) + ', cột ' + (c + 1) + '.' + (h.all ? '' : ' (Không đặt được hết các khối còn lại.)'));
+    hintTimer = setTimeout(clearHint, 2500);
 }
 
 /* ---------- drawing ---------- */
@@ -311,6 +437,7 @@ let drag = null;
 function startDrag(e, k, el){
     if(busy || S.over || !$('dlg').hidden || drag) return;
     e.preventDefault();
+    clearHint();
     const p = S.tray[k];
     const cell = boardCell();
     const d = pieceEl(p, cell, 'drag');
@@ -387,6 +514,7 @@ $('newBtn').onclick = () => {
     if(S.over || S.score === 0) return newGame();
     confirmBox('Ván mới?', 'Ván đang chơi (' + S.score + ' điểm) sẽ bị bỏ.', 'Ván mới', newGame);
 };
+$('hintBtn').onclick = hint;
 $('undoBtn').onclick = () => {
     if(!undo || busy) return;
     S = undo; undo = null;
@@ -397,6 +525,7 @@ $('helpBtn').onclick = () => openDlg('<h2>Luật chơi</h2><ul class="rules">'
     + '<li>Lấp đầy một <b>hàng</b>, một <b>cột</b> hoặc một <b>ô 3×3</b> thì các ô đó biến mất và bạn được điểm.</li>'
     + '<li>Ăn nhiều hàng cùng lúc được nhiều điểm hơn; ăn ở nhiều lượt liên tiếp được <b>combo</b> nhân điểm.</li>'
     + '<li>Đặt hết 3 khối thì có 3 khối mới. Không còn chỗ cho khối nào là hết ván (khối mờ là khối không còn chỗ).</li>'
+    + '<li><b>Gợi ý</b> (phím H) chỉ khối nên đặt và chỗ đặt, tính cho cả các khối còn lại. Không giới hạn, không ảnh hưởng điểm.</li>'
     + '<li>Mỗi lượt có thể đi lại 1 lần. Ván đang chơi tự lưu trên máy này.</li>'
     + '</ul><div class="acts"><button class="pri" id="dClose">Đã hiểu</button></div>', () => { $('dClose').onclick = closeDlg; });
 
@@ -404,6 +533,7 @@ document.addEventListener('keydown', e => {
     if(window.gameMenuOpen && gameMenuOpen()) return;
     if(!$('dlg').hidden){ if(e.key === 'Escape') closeDlg(); return; }
     if((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z'){ e.preventDefault(); $('undoBtn').click(); }
+    if((e.key === 'h' || e.key === 'H') && !e.ctrlKey && !e.metaKey && !e.altKey) hint();
 });
 
 function openDlg(html, init){ $('dlgBox').innerHTML = html; $('dlg').hidden = false; init && init(); }

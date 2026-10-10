@@ -209,6 +209,7 @@ function move(d){
     if(!r) return;
     busy = true;
     $('arrow').classList.remove('show');
+    say('');                                          // the hint (or any old message) is done with
     undo = {state: JSON.parse(JSON.stringify(S)), ids: ids.slice()};
     S.cells = r.cells; S.score += r.gained; ids = r.nid;
     const placed = addRandom();

@@ -35,6 +35,7 @@ Everything is kept in the browser only (`localStorage`): the game in progress (r
 - Points: 1 per square placed, plus 10 × (1 + 2 + … + n) for n rows/columns/boxes cleared at once, times the combo (moves in a row that clear).
 - When all 3 are placed, 3 new ones come (always at least one that fits, when possible). The game ends when no piece left fits; pieces that fit nowhere are dimmed.
 - On a phone the piece floats above your finger, with a preview of where it lands and which lines it clears. Undo one move.
+- **Gợi ý** (hint, key H): rings the piece to place and pulses its spot. It plans all the pieces left together (every order and position, beam search, plus an exhaustive check so it never misses a way to place them all), scoring points made and the board left (open space, no lone holes, room for big shapes). Following it, test games survived 360 pieces (~3,200 points) where random play lasted ~20.
 
 ## 2048
 
