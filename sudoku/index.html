@@ -12,46 +12,47 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Games">
 <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#0e1218" media="(prefers-color-scheme: dark)">
 <style>
-/* White and black: flat white board, black box lines and givens, dark grey
-   entries, grey highlights; red only for a repeated number */
+/* Classic white and blue (like "Sudoku Offline"): white board, thin grey lines,
+   black box lines, dark grey givens, blue entries, light-blue highlights, a
+   finished row/column/box flashes yellow; red only for a repeated number */
 :root{
-    --page:#ffffff; --text:#111111; --muted:#6b6b6b; --line:#e2e2e2;
-    --panel:#ffffff; --glass:#ffffff; --glass-line:#e2e2e2;
-    --cell:#ffffff; --box-alt:#ffffff; --grid:#cfcfcf; --frame:#111111;   /* thin lines; box lines and border */
-    --given:#111111; --user:#5a5a5a; --note:#7a7a7a;
-    --peer:#f2f2f2; --same:#dedede; --same-text:#111111; --sel:#cdcdcd;
-    --accent:#111111; --accent2:#111111; --tool:#555555; --danger:#d93a3a; --bad-bg:#f9d6d6; --flash:#d6d6d6;
-    --pad-text:#111111;
-    --btn:#ffffff; --btn-hover:#f2f2f2; --bg:#f2f2f2;
-    --grad:#111111;                                    /* black: white text on it */
+    --page:#ffffff; --text:#282e34; --muted:#6b7178; --line:#e2e6ea;
+    --panel:#ffffff; --glass:#ffffff; --glass-line:#e2e6ea;
+    --cell:#ffffff; --box-alt:#ffffff; --grid:#a0a0a0; --frame:#000000;   /* thin lines; box lines and border */
+    --given:#282e34; --user:#0960db; --note:#555a5f;
+    --peer:#cde7fe; --same:#b8deff; --sel:#7fc4ff;
+    --accent:#0960db; --accent2:#0960db; --tool:#454442; --danger:#e53935; --bad-bg:#fdd9d9; --flash:#fec92b;
+    --pad-text:#494846;
+    --btn:#ffffff; --btn-hover:#eef6ff; --bg:#f1f6fb;
+    --grad:linear-gradient(90deg,#43bae4,#49cbfa);     /* sky-blue band: white text on it */
     --shadow:0 1px 3px rgba(0,0,0,.1); --shadow-lg:0 2px 8px rgba(0,0,0,.1);
 }
 @media (prefers-color-scheme: dark){
     :root:not([data-theme="light"]){
-        --page:#000000; --text:#f2f2f2; --muted:#9a9a9a; --line:#2a2a2a;
-        --panel:#141414; --glass:#141414; --glass-line:#2a2a2a;
-        --cell:#121212; --box-alt:#121212; --grid:#333333; --frame:#d9d9d9;
-        --given:#ffffff; --user:#b5b5b5; --note:#8a8a8a;
-        --peer:#1e1e1e; --same:#333333; --same-text:#ffffff; --sel:#474747;
-        --accent:#f2f2f2; --accent2:#f2f2f2; --tool:#a8a8a8; --danger:#ff6464; --bad-bg:#4a1c1c; --flash:#3d3d3d;
-        --pad-text:#f2f2f2;
-        --btn:#141414; --btn-hover:#1f1f1f; --bg:#1f1f1f;
-        --grad:#f2f2f2;
+        --page:#0e1218; --text:#e6edf3; --muted:#8b949e; --line:#283039;
+        --panel:#161b22; --glass:#161b22; --glass-line:#283039;
+        --cell:#161b22; --box-alt:#161b22; --grid:#3d4651; --frame:#d0d7de;
+        --given:#e6edf3; --user:#5aa9ff; --note:#9aa4ae;
+        --peer:#1b2e45; --same:#22436b; --sel:#2d6cb0;
+        --accent:#5aa9ff; --accent2:#5aa9ff; --tool:#b4bcc4; --danger:#ff6b6b; --bad-bg:#4a1c1c; --flash:#9a7614;
+        --pad-text:#d0d7de;
+        --btn:#161b22; --btn-hover:#1f2a36; --bg:#1f2731;
+        --grad:linear-gradient(90deg,#43bae4,#49cbfa);
         --shadow:0 1px 3px rgba(0,0,0,.5); --shadow-lg:0 2px 8px rgba(0,0,0,.5);
     }
 }
 :root[data-theme="dark"]{
-    --page:#000000; --text:#f2f2f2; --muted:#9a9a9a; --line:#2a2a2a;
-    --panel:#141414; --glass:#141414; --glass-line:#2a2a2a;
-    --cell:#121212; --box-alt:#121212; --grid:#333333; --frame:#d9d9d9;
-    --given:#ffffff; --user:#b5b5b5; --note:#8a8a8a;
-    --peer:#1e1e1e; --same:#333333; --same-text:#ffffff; --sel:#474747;
-    --accent:#f2f2f2; --accent2:#f2f2f2; --tool:#a8a8a8; --danger:#ff6464; --bad-bg:#4a1c1c; --flash:#3d3d3d;
-    --pad-text:#f2f2f2;
-    --btn:#141414; --btn-hover:#1f1f1f; --bg:#1f1f1f;
-    --grad:#f2f2f2;
+    --page:#0e1218; --text:#e6edf3; --muted:#8b949e; --line:#283039;
+    --panel:#161b22; --glass:#161b22; --glass-line:#283039;
+    --cell:#161b22; --box-alt:#161b22; --grid:#3d4651; --frame:#d0d7de;
+    --given:#e6edf3; --user:#5aa9ff; --note:#9aa4ae;
+    --peer:#1b2e45; --same:#22436b; --sel:#2d6cb0;
+    --accent:#5aa9ff; --accent2:#5aa9ff; --tool:#b4bcc4; --danger:#ff6b6b; --bad-bg:#4a1c1c; --flash:#9a7614;
+    --pad-text:#d0d7de;
+    --btn:#161b22; --btn-hover:#1f2a36; --bg:#1f2731;
+    --grad:linear-gradient(90deg,#43bae4,#49cbfa);
     --shadow:0 1px 3px rgba(0,0,0,.5); --shadow-lg:0 2px 8px rgba(0,0,0,.5);
 }
 *{ box-sizing:border-box; margin:0; padding:0; }
@@ -63,7 +64,7 @@ body{ background:var(--page); color:var(--text);
 
 /* header: level badge, timer, puzzles solved; then the progress bar */
 .top{ display:flex; align-items:center; gap:8px; margin-bottom:10px; }
-.badge{ display:flex; align-items:baseline; gap:6px; padding:7px 14px; border-radius:999px; color:var(--page); font-weight:800;
+.badge{ display:flex; align-items:baseline; gap:6px; padding:7px 14px; border-radius:999px; color:#fff; font-weight:800;
         background:var(--grad); box-shadow:var(--shadow); }
 .badge .k{ font-size:12px; font-weight:600; opacity:.9; text-transform:uppercase; letter-spacing:.05em; }
 .badge #level{ font-size:20px; line-height:1; font-variant-numeric:tabular-nums; }
@@ -89,8 +90,7 @@ body{ background:var(--page); color:var(--text);
 .cell.bl{ margin-left:2px; }
 .cell.given{ color:var(--given); font-weight:800; }
 .cell.peer{ background:var(--peer); }
-.cell.same{ background:var(--same); color:var(--same-text); }
-.cell.same.given{ color:var(--same-text); }
+.cell.same{ background:var(--same); }
 .cell.sel{ background:var(--sel); }
 /* a number repeated in its row, column or box: both squares red */
 .cell.bad{ background:var(--bad-bg); }
@@ -102,9 +102,9 @@ body{ background:var(--page); color:var(--text);
 .cell .notes span{ display:flex; align-items:center; justify-content:center; }
 .cell .notes span.hl{ color:var(--accent); font-weight:800; }
 .cell.flash{ animation:flash .7s ease; }
-@keyframes flash{ 30%{ background:var(--flash); color:var(--given); } }
+@keyframes flash{ 30%{ background:var(--flash); } }
 .cell.win{ animation:win .6s ease both; }
-@keyframes win{ 50%{ background:var(--flash); color:var(--given); transform:scale(.88); } }
+@keyframes win{ 50%{ background:var(--flash); transform:scale(.88); } }
 .cell.placed{ animation:placed .22s ease-out; }
 @keyframes placed{ from{ transform:scale(.6); } to{ transform:scale(1); } }
 
@@ -151,10 +151,10 @@ button.icon{ flex:0 0 auto; width:42px; padding:9px 0; }
 .box p{ color:var(--muted); font-size:14px; line-height:1.45; margin-bottom:10px; }
 .box .acts{ display:flex; gap:8px; justify-content:flex-end; flex-wrap:wrap; }
 .box button{ border-radius:999px; }
-.box button.pri{ background:var(--grad); color:var(--page); border-color:transparent; }
-.box .band{ margin:-18px -18px 14px; padding:18px; color:var(--page); background:var(--grad); }
+.box button.pri{ background:var(--grad); color:#fff; border-color:transparent; }
+.box .band{ margin:-18px -18px 14px; padding:18px; color:#fff; background:var(--grad); }
 .box .band h2{ margin:0 0 2px; font-size:21px; }
-.box .band p{ color:var(--page); opacity:.85; margin:0; }
+.box .band p{ color:#fff; opacity:.85; margin:0; }
 .box .big{ display:flex; gap:10px; margin-bottom:12px; }
 .box .big div{ flex:1; background:var(--bg); border-radius:12px; padding:8px 10px; }
 .box .big b{ display:block; font-size:20px; font-variant-numeric:tabular-nums; }
@@ -458,7 +458,7 @@ function confetti(){
     cv.width = W * dpr; cv.height = H * dpr;
     const ctx = cv.getContext('2d');
     ctx.scale(dpr, dpr);
-    const colors = ['#111111', '#444444', '#777777', '#aaaaaa', '#d4d4d4', '#ffffff'];
+    const colors = ['#0960db', '#43bae4', '#7fc4ff', '#b8deff', '#fec92b', '#ffffff'];
     const parts = Array.from({length: 160}, () => ({
         x: W / 2 + (Math.random() - .5) * W * .3, y: H * .45, vx: (Math.random() - .5) * 13, vy: -6 - Math.random() * 11,
         w: 6 + Math.random() * 6, h: 4 + Math.random() * 6, r: Math.random() * 6, vr: (Math.random() - .5) * .35,
