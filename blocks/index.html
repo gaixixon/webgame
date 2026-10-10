@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="description" content="Xếp khối: kéo khối vào bàn 9×9, lấp đầy hàng, cột hoặc ô 3×3 để ăn điểm.">
+<title>Xếp khối</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cg fill='%23ffb020'%3E%3Crect x='3' y='3' width='12' height='12' rx='2'/%3E%3Crect x='3' y='17' width='12' height='12' rx='2'/%3E%3Crect x='17' y='17' width='12' height='12' rx='2'/%3E%3C/g%3E%3C/svg%3E">
+<link rel="manifest" href="../manifest.webmanifest">
+<link rel="apple-touch-icon" href="../icons/icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Games">
+<meta name="theme-color" content="#e9e7e1" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#14161a" media="(prefers-color-scheme: dark)">
+<style>
+:root{
+    --bg:#e9e7e1; --panel:#f7f6f2; --text:#222; --muted:#666; --line:#c9c6bd;
+    --board:#2b3a55; --cell:#3b4d6e; --cell-alt:#344563; --ghost:rgba(255,255,255,.35); --hint:rgba(255,255,255,.22);
+    --btn:#fff; --btn-hover:#f0eee8; --accent:#1f6feb; --danger:#c62828;
+    --shadow:0 2px 10px rgba(0,0,0,.12);
+}
+@media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+        --bg:#14161a; --panel:#1d2026; --text:#eee; --muted:#9aa0a8; --line:#333842;
+        --board:#10151f; --cell:#1f2a3d; --cell-alt:#1a2333;
+        --btn:#262a31; --btn-hover:#2f343c; --accent:#58a6ff; --danger:#ef5350;
+        --shadow:0 2px 10px rgba(0,0,0,.5);
+    }
+}
+:root[data-theme="dark"]{
+    --bg:#14161a; --panel:#1d2026; --text:#eee; --muted:#9aa0a8; --line:#333842;
+    --board:#10151f; --cell:#1f2a3d; --cell-alt:#1a2333;
+    --btn:#262a31; --btn-hover:#2f343c; --accent:#58a6ff; --danger:#ef5350;
+    --shadow:0 2px 10px rgba(0,0,0,.5);
+}
+*{ box-sizing:border-box; margin:0; padding:0; }
+html{ -webkit-text-size-adjust:100%; }
+body{ background:var(--bg); color:var(--text); font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+      padding:12px 16px 24px; min-height:100vh; -webkit-tap-highlight-color:transparent; overscroll-behavior:none; }
+.wrap{ width:100%; max-width:480px; margin:0 auto; }
+
+.top{ display:grid; grid-template-columns:1fr auto 1fr; gap:8px; margin-bottom:10px; align-items:stretch; }
+.stat{ background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:6px 10px; box-shadow:var(--shadow); min-width:0; position:relative; }
+.stat.r{ text-align:right; }
+.stat .k{ font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; }
+.stat .v{ font-size:22px; font-weight:700; font-variant-numeric:tabular-nums; line-height:1.2; }
+.combo{ display:flex; align-items:center; justify-content:center; font-weight:800; color:var(--accent); font-size:15px; min-width:64px; }
+.combo:empty{ background:transparent; border-color:transparent; box-shadow:none; }
+.plus{ position:absolute; left:10px; top:22px; font-weight:700; color:var(--accent); pointer-events:none; animation:plus .8s ease-out forwards; }
+@keyframes plus{ from{ opacity:1; transform:none; } to{ opacity:0; transform:translateY(-24px); } }
+
+/* board */
+.board{ display:grid; grid-template-columns:repeat(9,1fr); gap:2px; padding:3px; width:100%; aspect-ratio:1; background:var(--board);
+        border-radius:8px; user-select:none; -webkit-user-select:none; touch-action:none; }
+.cell{ border-radius:3px; background:var(--cell); position:relative; }
+.cell.alt{ background:var(--cell-alt); }
+.cell.hint::after{ content:""; position:absolute; inset:0; border-radius:3px; background:var(--hint); }
+.cell.ghost{ background:var(--ghost); }
+.blk, .cell.full{ background:var(--c); box-shadow:inset 0 -3px 0 rgba(0,0,0,.25), inset 0 2px 0 rgba(255,255,255,.35); }
+.cell.full.hint::after{ background:rgba(255,255,255,.35); }
+.cell.pop{ animation:pop .3s ease-in forwards; }
+@keyframes pop{ 0%{ transform:scale(1); } 40%{ transform:scale(1.15); filter:brightness(1.6); } 100%{ transform:scale(0); opacity:0; } }
+.cell.land{ animation:land .18s ease-out; }
+@keyframes land{ from{ transform:scale(.7); } to{ transform:scale(1); } }
+
+/* the 3 pieces */
+.tray{ display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-top:14px; height:min(30vw, 140px); touch-action:none; }
+.slot{ display:flex; align-items:center; justify-content:center; background:var(--panel); border:1px solid var(--line); border-radius:10px; }
+.piece{ display:grid; gap:2px; cursor:grab; touch-action:none; }
+.piece.off{ opacity:.3; }
+.piece.lifted{ visibility:hidden; }
+.piece .blk, .piece .gap{ border-radius:3px; }
+.drag{ position:fixed; left:0; top:0; display:grid; gap:2px; pointer-events:none; z-index:20; will-change:transform; filter:drop-shadow(0 6px 10px rgba(0,0,0,.35)); }
+.drag .blk{ border-radius:3px; }
+
+.bar{ display:flex; flex-wrap:wrap; gap:8px; margin-top:12px; }
+.bar button{ flex:1 1 auto; }
+button{ font:inherit; font-size:14px; color:var(--text); background:var(--btn); border:1px solid var(--line); border-radius:8px;
+        padding:9px 12px; cursor:pointer; box-shadow:var(--shadow); white-space:nowrap; }
+button:hover{ background:var(--btn-hover); }
+button:disabled{ opacity:.45; cursor:default; }
+button.icon{ flex:0 0 auto; width:42px; padding:9px 0; }
+#msg{ min-height:20px; text-align:center; color:var(--muted); font-size:14px; margin-top:10px; }
+
+/* phones: the board almost edge to edge (2px each side, clear of the notch in landscape) */
+@media (max-width:520px){
+    .board{ width:calc(100vw - 4px - env(safe-area-inset-left) - env(safe-area-inset-right));
+            margin-left:calc(50% - 50vw + 2px + env(safe-area-inset-left)); border-radius:0; }
+}
+
+.dlg{ position:fixed; inset:0; background:rgba(0,0,0,.5); display:flex; align-items:center; justify-content:center; padding:16px; z-index:30; }
+.dlg[hidden]{ display:none; }
+.box{ background:var(--panel); color:var(--text); border-radius:12px; padding:18px; width:100%; max-width:360px; box-shadow:0 10px 40px rgba(0,0,0,.4); }
+.box h2{ font-size:18px; margin-bottom:10px; }
+.box p{ color:var(--muted); font-size:14px; line-height:1.45; margin-bottom:10px; }
+.box .acts{ display:flex; gap:8px; justify-content:flex-end; flex-wrap:wrap; }
+.box button.pri{ background:var(--accent); color:#fff; border-color:var(--accent); }
+.rules{ font-size:14px; line-height:1.5; padding-left:18px; margin-bottom:12px; }
+.rules li{ margin-bottom:4px; }
+</style>
+</head>
+<body>
+<script src="../menu.js" data-game="blocks"></script>
+<div class="wrap">
+    <div class="top">
+        <div class="stat" id="scoreBox"><div class="k">Điểm</div><div class="v" id="score">0</div></div>
+        <div class="stat combo" id="combo" title="Ăn liên tiếp"></div>
+        <div class="stat r"><div class="k">Kỷ lục</div><div class="v" id="best">0</div></div>
+    </div>
+
+    <div class="board" id="board" aria-label="Bàn 9×9"></div>
+    <div class="tray" id="tray" aria-label="3 khối để đặt"></div>
+
+    <div id="msg"></div>
+
+    <div class="bar">
+        <button id="newBtn">Ván mới</button>
+        <button id="undoBtn" disabled title="Đi lại nước vừa rồi (1 lần)">↶ Đi lại</button>
+        <button id="helpBtn" class="icon" title="Luật chơi" aria-label="Luật chơi">?</button>
+    </div>
+</div>
+
+<div class="dlg" id="dlg" hidden><div class="box" id="dlgBox" role="dialog" aria-modal="true"></div></div>
+
+<script>
+'use strict';
+/* =========================================================
+   Xếp khối (block puzzle): drag each of the 3 pieces onto the 9x9
+   board. A full row, column or 3x3 box clears. When the 3 are placed,
+   3 new ones come. Game over when none of the pieces left fits.
+   Points: 1 per square placed, plus 10 x (1 + 2 + ... + n) for n units
+   cleared at once, times the combo (moves in a row that clear).
+   Saved in this browser only (localStorage): the game and the best score.
+   ========================================================= */
+const N = 9;
+const KEY = {game: 'blocks.game', best: 'blocks.best'};
+const COLORS = ['#ff5a4f', '#ffb020', '#ffd93b', '#3ccf6e', '#2fc6d6', '#4a8bff', '#9b6bff', '#ff6fb5'];
+
+/* shapes as [row, col] squares; weight = how often it comes */
+const SHAPES = (() => {
+    const list = [];
+    const add = (w, ...shapes) => shapes.forEach(s => list.push({w, s}));
+    const rot = s => s.map(([r, c]) => [c, -r]);
+    const norm = s => { const r0 = Math.min(...s.map(x => x[0])), c0 = Math.min(...s.map(x => x[1])); return s.map(([r, c]) => [r - r0, c - c0]); };
+    const rots = (s, n) => { const out = []; let t = s; for(let k = 0; k < n; k++){ out.push(norm(t)); t = rot(t); } return out; };
+    add(2, [[0, 0]]);
+    add(3, [[0, 0], [0, 1]], [[0, 0], [1, 0]]);
+    add(3, [[0, 0], [0, 1], [0, 2]], [[0, 0], [1, 0], [2, 0]]);
+    add(2, [[0, 0], [0, 1], [0, 2], [0, 3]], [[0, 0], [1, 0], [2, 0], [3, 0]]);
+    add(1, [[0, 0], [0, 1], [0, 2], [0, 3], [0, 4]], [[0, 0], [1, 0], [2, 0], [3, 0], [4, 0]]);
+    add(3, [[0, 0], [0, 1], [1, 0], [1, 1]]);                                   // 2x2
+    add(1, [[0, 0], [0, 1], [0, 2], [1, 0], [1, 1], [1, 2], [2, 0], [2, 1], [2, 2]]);   // 3x3
+    add(1, [[0, 0], [0, 1], [0, 2], [1, 0], [1, 1], [1, 2]], [[0, 0], [0, 1], [1, 0], [1, 1], [2, 0], [2, 1]]);   // 2x3
+    add(2, ...rots([[0, 0], [1, 0], [1, 1]], 4));                               // small L
+    add(1, ...rots([[0, 0], [1, 0], [2, 0], [2, 1], [2, 2]], 4));               // big L (3x3 corner)
+    add(1, ...rots([[0, 0], [1, 0], [2, 0], [2, 1]], 4), ...rots([[0, 1], [1, 1], [2, 1], [2, 0]], 4));   // L, J
+    add(1, ...rots([[0, 0], [0, 1], [0, 2], [1, 1]], 4));                       // T
+    add(1, ...rots([[0, 0], [0, 1], [1, 1], [1, 2]], 2), ...rots([[0, 1], [0, 2], [1, 0], [1, 1]], 2));   // S, Z
+    return list;
+})();
+const TOTAL_W = SHAPES.reduce((a, x) => a + x.w, 0);
+
+const $ = id => document.getElementById(id);
+const store = {
+    get(k){ try{ return JSON.parse(localStorage.getItem(k)); }catch(e){ return null; } },
+    set(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
+};
+
+let S;              // {grid[81]: 0 or colour+1, tray: [{s, c} | null] x3, score, combo, over, beat}
+let undo = null;
+let busy = false;
+
+/* ---------- rules ---------- */
+const fits = (grid, s, r, c) => s.every(([dr, dc]) => { const rr = r + dr, cc = c + dc; return rr >= 0 && cc >= 0 && rr < N && cc < N && !grid[rr * N + cc]; });
+function fitsAnywhere(grid, s){ for(let r = 0; r < N; r++) for(let c = 0; c < N; c++) if(fits(grid, s, r, c)) return true; return false; }
+
+/* the rows, columns and boxes a grid has full: lists of squares */
+function fullUnits(grid){
+    const units = [];
+    for(let k = 0; k < N; k++){
+        const row = [], col = [], box = [];
+        for(let j = 0; j < N; j++){
+            row.push(k * N + j); col.push(j * N + k);
+            box.push((Math.floor(k / 3) * 3 + Math.floor(j / 3)) * N + (k % 3) * 3 + j % 3);
+        }
+        for(const u of [row, col, box]) if(u.every(i => grid[i])) units.push(u);
+    }
+    return units;
+}
+
+function pick(){
+    let x = Math.random() * TOTAL_W;
+    for(const sh of SHAPES){ x -= sh.w; if(x < 0) return sh.s; }
+    return SHAPES[0].s;
+}
+/* 3 new pieces; tries a few times so that at least one fits */
+function newTray(grid){
+    let tray;
+    for(let k = 0; k < 30; k++){
+        tray = [0, 1, 2].map(() => ({s: pick(), c: Math.floor(Math.random() * COLORS.length)}));
+        if(tray.some(p => fitsAnywhere(grid, p.s))) break;
+    }
+    return tray;
+}
+
+function newGame(){
+    const grid = new Array(N * N).fill(0);
+    S = {grid, tray: newTray(grid), score: 0, combo: 0, over: false, beat: false};
+    undo = null;
+    save(); render(); say('Kéo một khối vào bàn.');
+}
+
+async function place(k, r, c){
+    const p = S.tray[k];
+    if(!p || !fits(S.grid, p.s, r, c)) return false;
+    busy = true;
+    undo = JSON.parse(JSON.stringify(S));
+    const landed = p.s.map(([dr, dc]) => (r + dr) * N + c + dc);
+    landed.forEach(i => S.grid[i] = p.c + 1);
+    S.tray[k] = null;
+    let gain = landed.length;
+    const units = fullUnits(S.grid);
+    render(landed);
+    if(units.length){
+        S.combo++;
+        const n = units.length;
+        gain += 10 * n * (n + 1) / 2 * S.combo;
+        const gone = new Set(units.flat());
+        gone.forEach(i => cells[i].classList.add('pop'));
+        await wait(300);
+        gone.forEach(i => S.grid[i] = 0);
+        say((n > 1 ? 'Ăn ' + n + ' hàng cùng lúc! ' : 'Ăn 1 hàng. ') + (S.combo > 1 ? 'Combo ×' + S.combo + '.' : ''));
+    }else{
+        if(S.combo) say('');
+        S.combo = 0;
+    }
+    S.score += gain;
+    showPlus(gain);
+    if(S.score > best()){ S.beat = true; store.set(KEY.best, S.score); }
+    if(S.tray.every(x => !x)) S.tray = newTray(S.grid);
+    if(!S.tray.some(x => x && fitsAnywhere(S.grid, x.s))) S.over = true;
+    busy = false;
+    save(); render();
+    if(S.over) setTimeout(gameOver, 350);
+    return true;
+}
+
+/* ---------- drawing ---------- */
+const board = $('board'), cells = [];
+for(let i = 0; i < N * N; i++){
+    const d = document.createElement('div');
+    const br = Math.floor(Math.floor(i / N) / 3), bc = Math.floor((i % N) / 3);
+    d.className = 'cell' + ((br + bc) % 2 ? ' alt' : '');
+    d.dataset.base = d.className;
+    board.appendChild(d);
+    cells.push(d);
+}
+function render(landed){
+    const l = new Set(landed || []);
+    for(let i = 0; i < N * N; i++){
+        const d = cells[i], v = S.grid[i];
+        d.className = d.dataset.base + (v ? ' full' : '') + (l.has(i) ? ' land' : '');
+        if(v) d.style.setProperty('--c', COLORS[v - 1]); else d.style.removeProperty('--c');
+    }
+    drawTray();
+    $('score').textContent = S.score;
+    $('best').textContent = Math.max(best(), S.score);
+    $('combo').textContent = S.combo > 1 ? 'Combo ×' + S.combo : '';
+    $('undoBtn').disabled = !undo || busy || S.over;
+}
+
+function pieceSize(s){ return [Math.max(...s.map(x => x[0])) + 1, Math.max(...s.map(x => x[1])) + 1]; }
+function pieceEl(p, cell, cls){
+    const [h, w] = pieceSize(p.s);
+    const el = document.createElement('div');
+    el.className = cls;
+    el.style.gridTemplateColumns = 'repeat(' + w + ',' + cell + 'px)';
+    el.style.gridTemplateRows = 'repeat(' + h + ',' + cell + 'px)';
+    const on = new Set(p.s.map(([r, c]) => r * w + c));
+    for(let k = 0; k < h * w; k++){
+        const b = document.createElement('div');
+        if(on.has(k)){ b.className = 'blk'; b.style.setProperty('--c', COLORS[p.c]); }
+        el.appendChild(b);
+    }
+    return el;
+}
+function drawTray(){
+    const tray = $('tray');
+    tray.textContent = '';
+    const slotW = (tray.clientWidth - 16) / 3;
+    const cell = Math.min(Math.floor((Math.min(slotW, tray.clientHeight) - 16) / 5), Math.floor(boardCell() * 0.6));
+    S.tray.forEach((p, k) => {
+        const slot = document.createElement('div');
+        slot.className = 'slot';
+        if(p){
+            const el = pieceEl(p, cell, 'piece' + (fitsAnywhere(S.grid, p.s) ? '' : ' off'));
+            el.dataset.k = k;
+            el.setAttribute('aria-label', 'Khối ' + p.s.length + ' ô');
+            el.addEventListener('pointerdown', e => startDrag(e, k, el));
+            slot.appendChild(el);
+        }
+        tray.appendChild(slot);
+    });
+}
+
+/* ---------- dragging a piece ---------- */
+function boardCell(){ return (board.clientWidth - 6 - 8 * 2) / N; }     // padding 3px each side, 2px gaps
+let drag = null;
+
+function startDrag(e, k, el){
+    if(busy || S.over || !$('dlg').hidden || drag) return;
+    e.preventDefault();
+    const p = S.tray[k];
+    const cell = boardCell();
+    const d = pieceEl(p, cell, 'drag');
+    document.body.appendChild(d);
+    const [h, w] = pieceSize(p.s);
+    const pw = w * cell + (w - 1) * 2, ph = h * cell + (h - 1) * 2;
+    // on touch the piece floats above the finger so it can be seen
+    const lift = e.pointerType === 'mouse' ? ph / 2 : ph + cell * 0.9;
+    drag = {k, el, d, p, pw, ph, lift, cell, id: e.pointerId, target: null};
+    el.classList.add('lifted');
+    try{ el.setPointerCapture(e.pointerId); }catch(err){}
+    moveDrag(e);
+}
+function moveDrag(e){
+    if(!drag || e.pointerId !== drag.id) return;
+    const x = e.clientX - drag.pw / 2, y = e.clientY - drag.lift;
+    drag.d.style.transform = 'translate(' + x + 'px,' + y + 'px)';
+    // which board square the piece's top-left square is over
+    const b = board.getBoundingClientRect();
+    const pitch = drag.cell + 2;
+    const c = Math.round((x - b.left - 3) / pitch), r = Math.round((y - b.top - 3) / pitch);
+    const ok = fits(S.grid, drag.p.s, r, c);
+    const t = ok ? r * N + c : null;
+    if(t !== drag.target){ drag.target = t; showGhost(ok ? [r, c] : null); }
+}
+async function endDrag(e){
+    if(!drag || e.pointerId !== drag.id) return;
+    const dd = drag;
+    drag = null;
+    showGhost(null);
+    dd.d.remove();
+    if(dd.target !== null && e.type !== 'pointercancel'){
+        await place(dd.k, Math.floor(dd.target / N), dd.target % N);
+    }else{
+        dd.el.classList.remove('lifted');
+    }
+}
+document.addEventListener('pointermove', moveDrag, {passive: true});
+document.addEventListener('pointerup', endDrag);
+document.addEventListener('pointercancel', endDrag);
+
+/* where the piece would land, and the lines it would clear */
+function showGhost(at){
+    for(let i = 0; i < N * N; i++) cells[i].classList.remove('ghost', 'hint');
+    if(!at) return;
+    const [r, c] = at;
+    const g = S.grid.slice();
+    for(const [dr, dc] of drag.p.s){ const i = (r + dr) * N + c + dc; g[i] = 1; cells[i].classList.add('ghost'); }
+    for(const u of fullUnits(g)) for(const i of u) cells[i].classList.add('hint');
+}
+
+/* ---------- misc ---------- */
+function showPlus(n){
+    const p = document.createElement('div');
+    p.className = 'plus'; p.textContent = '+' + n;
+    $('scoreBox').appendChild(p);
+    setTimeout(() => p.remove(), 800);
+}
+function best(){ return +store.get(KEY.best) || 0; }
+function say(t){ $('msg').textContent = t || ''; }
+const wait = ms => new Promise(r => setTimeout(r, ms));
+function save(){ store.set(KEY.game, S); }
+
+function gameOver(){
+    say('Không còn chỗ cho khối nào: ván kết thúc với ' + S.score + ' điểm.');
+    openDlg('<h2>' + (S.beat ? 'Kỷ lục mới!' : 'Hết ván') + '</h2><p>Không còn chỗ đặt khối. Bạn được <b>' + S.score + '</b> điểm.</p>'
+        + '<div class="acts"><button id="dClose">Đóng</button><button class="pri" id="dNew">Ván mới</button></div>', () => {
+        $('dClose').onclick = closeDlg;
+        $('dNew').onclick = () => { closeDlg(); newGame(); };
+    });
+}
+
+$('newBtn').onclick = () => {
+    if(S.over || S.score === 0) return newGame();
+    confirmBox('Ván mới?', 'Ván đang chơi (' + S.score + ' điểm) sẽ bị bỏ.', 'Ván mới', newGame);
+};
+$('undoBtn').onclick = () => {
+    if(!undo || busy) return;
+    S = undo; undo = null;
+    save(); render(); say('Đã đi lại nước vừa rồi.');
+};
+$('helpBtn').onclick = () => openDlg('<h2>Luật chơi</h2><ul class="rules">'
+    + '<li>Kéo một trong 3 khối bên dưới vào bàn. Khối không xoay được.</li>'
+    + '<li>Lấp đầy một <b>hàng</b>, một <b>cột</b> hoặc một <b>ô 3×3</b> thì các ô đó biến mất và bạn được điểm.</li>'
+    + '<li>Ăn nhiều hàng cùng lúc được nhiều điểm hơn; ăn ở nhiều lượt liên tiếp được <b>combo</b> nhân điểm.</li>'
+    + '<li>Đặt hết 3 khối thì có 3 khối mới. Không còn chỗ cho khối nào là hết ván (khối mờ là khối không còn chỗ).</li>'
+    + '<li>Mỗi lượt có thể đi lại 1 lần. Ván đang chơi tự lưu trên máy này.</li>'
+    + '</ul><div class="acts"><button class="pri" id="dClose">Đã hiểu</button></div>', () => { $('dClose').onclick = closeDlg; });
+
+document.addEventListener('keydown', e => {
+    if(window.gameMenuOpen && gameMenuOpen()) return;
+    if(!$('dlg').hidden){ if(e.key === 'Escape') closeDlg(); return; }
+    if((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z'){ e.preventDefault(); $('undoBtn').click(); }
+});
+
+function openDlg(html, init){ $('dlgBox').innerHTML = html; $('dlg').hidden = false; init && init(); }
+function closeDlg(){ $('dlg').hidden = true; $('dlgBox').innerHTML = ''; }
+function confirmBox(title, text, okText, ok){
+    openDlg('<h2>' + title + '</h2><p>' + text + '</p><div class="acts"><button id="dNo">Hủy</button><button class="pri" id="dYes">' + okText + '</button></div>', () => {
+        $('dNo').onclick = closeDlg;
+        $('dYes').onclick = () => { closeDlg(); ok(); };
+    });
+}
+$('dlg').addEventListener('click', e => { if(e.target === $('dlg')) closeDlg(); });
+let resizeTimer = null;
+window.addEventListener('resize', () => { clearTimeout(resizeTimer); resizeTimer = setTimeout(() => S && !drag && drawTray(), 150); });
+
+/* ---------- start ---------- */
+const saved = store.get(KEY.game);
+const okSave = saved && Array.isArray(saved.grid) && saved.grid.length === N * N && saved.grid.every(v => Number.isInteger(v) && v >= 0 && v <= COLORS.length)
+    && Array.isArray(saved.tray) && saved.tray.length === 3
+    && saved.tray.every(p => p === null || (p && Array.isArray(p.s) && p.s.length && p.s.every(x => Array.isArray(x) && x.length === 2) && Number.isInteger(p.c)))
+    && Number.isFinite(saved.score);
+if(okSave && !saved.over){
+    S = {grid: saved.grid, tray: saved.tray, score: saved.score, combo: saved.combo || 0, over: false, beat: !!saved.beat};
+    if(S.tray.every(x => !x)) S.tray = newTray(S.grid);
+    render(); say('Tiếp tục ván đang chơi.');
+}else{
+    newGame();
+    if(!best()) setTimeout(() => $('helpBtn').click(), 50);
+}
+</script>
+</body>
+</html>

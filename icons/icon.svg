@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#22324f"/><stop offset="1" stop-color="#0f1726"/></linearGradient>
+    <radialGradient id="ball" cx=".35" cy=".3" r=".8"><stop offset="0" stop-color="#fff" stop-opacity=".95"/><stop offset=".18" stop-color="#ff6b5e"/><stop offset=".6" stop-color="#e01b12"/><stop offset="1" stop-color="#7a0000"/></radialGradient>
+  </defs>
+  <rect width="512" height="512" fill="url(#bg)"/>
+  <!-- four games: ball, sudoku digit, blocks, 2048 tile -->
+  <circle cx="166" cy="166" r="78" fill="url(#ball)"/>
+  <rect x="268" y="88" width="156" height="156" rx="22" fill="#f4f1e8"/>
+  <text x="346" y="214" font-family="Arial,Helvetica,sans-serif" font-size="128" font-weight="700" text-anchor="middle" fill="#1f5fd0">9</text>
+  <g fill="#ffb020"><rect x="88" y="268" width="74" height="74" rx="10"/><rect x="88" y="350" width="74" height="74" rx="10"/><rect x="170" y="350" width="74" height="74" rx="10"/></g>
+  <rect x="268" y="268" width="156" height="156" rx="22" fill="#edc22e"/>
+  <text x="346" y="368" font-family="Arial,Helvetica,sans-serif" font-size="54" font-weight="700" text-anchor="middle" fill="#fff">2048</text>
+</svg>

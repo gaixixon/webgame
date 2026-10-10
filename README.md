@@ -1,8 +1,12 @@
 # webgame
 
-Small games that run in the browser: no install, no server, no tracking.
+Small games that run in the browser: no install, no server, no tracking. They work **offline** too.
 
 Play: **https://gaixixon.github.io/webgame/**
+
+## Offline / on a plane
+
+Open the site once while online: a service worker ([`sw.js`](sw.js)) stores every game on the device. After that the games open and play in airplane mode. On iPhone, Safari → Share → **Add to Home Screen** makes it a full-screen app ("Games") with its own icon. Pages are served from the stored copy and refreshed in the background, so an update shows on the next visit.
 
 ## Lines 98
 
@@ -25,7 +29,19 @@ Everything is kept in the browser only (`localStorage`): the game in progress (r
 - Keyboard: digits, arrows, Delete, N for notes, Ctrl+Z.
 - The game in progress and your progress (level, puzzles solved, highest level) are kept in `localStorage`.
 
-Each game is one file ([`lines98/index.html`](lines98/index.html), [`sudoku/index.html`](sudoku/index.html)) plus the shared ☰ game menu, [`menu.js`](menu.js): plain HTML, CSS and JavaScript, no libraries.
+## Xếp khối (block puzzle)
+
+- Drag one of 3 pieces onto the 9×9 board (pieces don't rotate). A full row, column or 3×3 box clears.
+- Points: 1 per square placed, plus 10 × (1 + 2 + … + n) for n rows/columns/boxes cleared at once, times the combo (moves in a row that clear).
+- When all 3 are placed, 3 new ones come (always at least one that fits, when possible). The game ends when no piece left fits; pieces that fit nowhere are dimmed.
+- On a phone the piece floats above your finger, with a preview of where it lands and which lines it clears. Undo one move.
+
+## 2048
+
+- Swipe (or arrow keys / WASD) to slide all tiles; two equal tiles that meet merge into their sum. A 2 (sometimes a 4) appears after each move.
+- Reach 2048 to win, then keep playing for a higher score. Undo one move, best score kept.
+
+Each game is one file in its folder (`lines98/`, `sudoku/`, `blocks/`, `2048/`) plus the shared ☰ game menu, [`menu.js`](menu.js), which also registers the offline service worker: plain HTML, CSS and JavaScript, no libraries. A new game needs an entry in `menu.js` (GAMES) and in `sw.js` (FILES).
 
 ## Run locally
 

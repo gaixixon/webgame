@@ -4,6 +4,14 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Web Games</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Games">
+<meta name="theme-color" content="#e9e7e1" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#14161a" media="(prefers-color-scheme: dark)">
+<link rel="icon" href="icons/icon.svg">
 <style>
 :root{ --bg:#e9e7e1; --panel:#f7f6f2; --text:#222; --muted:#666; --line:#c9c6bd; }
 @media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){ --bg:#14161a; --panel:#1d2026; --text:#eee; --muted:#9aa0a8; --line:#333842; } }
@@ -17,6 +25,8 @@ a.game{ display:block; margin-bottom:10px; background:var(--panel); border:1px s
 a.game:hover{ border-color:var(--muted); }
 a.game b{ display:block; font-size:18px; margin-bottom:4px; }
 a.game span{ color:var(--muted); font-size:14px; }
+.off{ font-size:13px; margin:14px 0 6px; }
+.tip{ font-size:13px; line-height:1.5; }
 </style>
 </head>
 <body>
@@ -25,6 +35,17 @@ a.game span{ color:var(--muted); font-size:14px; }
     <p>Trò chơi nhỏ chạy ngay trên trình duyệt, không cần cài đặt.</p>
     <a class="game" href="lines98/"><b>Lines 98</b><span>Xếp 5 bi cùng màu thành hàng để ghi điểm.</span></a>
     <a class="game" href="sudoku/"><b>Sudoku</b><span>Điền số 1–9: mỗi hàng, cột và ô 3×3 đủ 1–9. Giải xong lên cấp, khó dần.</span></a>
+    <a class="game" href="blocks/"><b>Xếp khối</b><span>Kéo khối vào bàn 9×9, lấp đầy hàng, cột hoặc ô 3×3 để ăn điểm.</span></a>
+    <a class="game" href="2048/"><b>2048</b><span>Vuốt để gộp hai ô cùng số, tới ô 2048.</span></a>
+    <p class="off" id="off"></p>
+    <p class="tip">Chơi khi không có mạng (trên máy bay): mở trang này một lần khi có mạng, rồi trong Safari bấm <b>Chia sẻ → Thêm vào MH chính</b>. Trò chơi mở như một ứng dụng và chạy cả ở chế độ máy bay.</p>
 </div>
+<script>
+// offline: sw.js keeps every game on the device
+if('serviceWorker' in navigator){
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+    navigator.serviceWorker.ready.then(() => { document.getElementById('off').textContent = '✓ Đã lưu trên máy: chơi được khi không có mạng.'; });
+}
+</script>
 </body>
 </html>

@@ -1,4 +1,4 @@
-/* Shared game menu: a bar with ☰ at the top of each game page; the button
+/* Shared game menu (and the offline service worker): a bar with ☰ at the top of each game page; the button
    opens a side panel listing the games. A page includes it with
      <script src="../menu.js" data-game="lines98"></script>
    placed first in <body>. The page's colour tokens (--panel, --line, --text,
@@ -8,7 +8,9 @@
     'use strict';
     const GAMES = [
         {id: 'lines98', name: 'Lines 98', desc: 'Xếp 5 bi cùng màu thành hàng'},
-        {id: 'sudoku', name: 'Sudoku', desc: 'Điền số 1–9, mỗi hàng, cột, ô 3×3 một lần'}
+        {id: 'sudoku', name: 'Sudoku', desc: 'Điền số 1–9, mỗi hàng, cột, ô 3×3 một lần'},
+        {id: 'blocks', name: 'Xếp khối', desc: 'Đặt khối, lấp đầy hàng, cột, ô 3×3'},
+        {id: '2048', name: '2048', desc: 'Vuốt để gộp số, tới ô 2048'}
     ];
     const me = document.currentScript;
     const base = new URL('./', me.src);                    // the site root (where menu.js is)
@@ -97,4 +99,7 @@
         if(open && e.key === 'Escape'){ e.stopImmediatePropagation(); set(false); }
     }, true);
     window.gameMenuOpen = () => open;                    // games ignore their keys while it is open
+
+    // offline: sw.js keeps every game on the device (works in airplane mode)
+    if('serviceWorker' in navigator) navigator.serviceWorker.register(new URL('sw.js', base).href).catch(() => {});
 })();
