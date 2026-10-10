@@ -21,7 +21,7 @@
     --page:#ffffff; --text:#282e34; --muted:#6b7178; --line:#e2e6ea;
     --panel:#ffffff; --glass:#ffffff; --glass-line:#e2e6ea;
     --cell:#ffffff; --box-alt:#ffffff; --grid:#a0a0a0; --frame:#000000;   /* thin lines; box lines and border */
-    --given:#282e34; --user:#0960db; --note:#555a5f;
+    --given:#282e34; --user:#0960db; --note:#6b7178;
     --peer:#cde7fe; --same:#b8deff; --sel:#7fc4ff;
     --accent:#0960db; --accent2:#0960db; --tool:#454442; --danger:#e53935; --bad-bg:#fdd9d9; --flash:#fec92b;
     --pad-text:#494846;
@@ -98,7 +98,7 @@ body{ background:var(--page); color:var(--text);
 .cell.shake{ animation:shake .35s ease; }
 @keyframes shake{ 20%{ transform:translateX(-4px); } 40%{ transform:translateX(4px); } 60%{ transform:translateX(-3px); } 80%{ transform:translateX(2px); } }
 .cell .notes{ position:absolute; inset:2px; display:grid; grid-template-columns:repeat(3,1fr); grid-template-rows:repeat(3,1fr);
-              font-size:min(2.7vw, 12px); line-height:1; color:var(--note); font-weight:500; }
+              font-size:min(3vw, 13px); line-height:1; color:var(--note); font-weight:400; }
 .cell .notes span{ display:flex; align-items:center; justify-content:center; }
 .cell .notes span.hl{ color:var(--accent); font-weight:800; }
 /* a note for a number already placed in its row, column or box */
