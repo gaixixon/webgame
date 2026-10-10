@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Web Games</title>
+<style>
+:root{ --bg:#e9e7e1; --panel:#f7f6f2; --text:#222; --muted:#666; --line:#c9c6bd; }
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){ --bg:#14161a; --panel:#1d2026; --text:#eee; --muted:#9aa0a8; --line:#333842; } }
+:root[data-theme="dark"]{ --bg:#14161a; --panel:#1d2026; --text:#eee; --muted:#9aa0a8; --line:#333842; }
+*{ box-sizing:border-box; margin:0; padding:0; }
+body{ background:var(--bg); color:var(--text); font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif; padding:24px 16px; }
+.wrap{ max-width:480px; margin:0 auto; }
+h1{ font-size:24px; margin-bottom:6px; }
+p{ color:var(--muted); margin-bottom:18px; }
+a.game{ display:block; background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:14px 16px; color:inherit; text-decoration:none; }
+a.game:hover{ border-color:var(--muted); }
+a.game b{ display:block; font-size:18px; margin-bottom:4px; }
+a.game span{ color:var(--muted); font-size:14px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+    <h1>Web Games</h1>
+    <p>Trò chơi nhỏ chạy ngay trên trình duyệt, không cần cài đặt.</p>
+    <a class="game" href="lines98/"><b>Lines 98</b><span>Xếp 5 bi cùng màu thành hàng để ghi điểm.</span></a>
+</div>
+</body>
+</html>

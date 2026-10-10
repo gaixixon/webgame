@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="description" content="Lines 98: xếp 5 bi cùng màu thành hàng để ghi điểm.">
+<title>Lines 98</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='13' fill='%23d22'/%3E%3Ccircle cx='12' cy='11' r='4' fill='%23fff' opacity='.6'/%3E%3C/svg%3E">
+<style>
+:root{
+    --bg:#e9e7e1; --panel:#f7f6f2; --text:#222; --muted:#666; --line:#c9c6bd;
+    --cell:#c8c8c8; --cell-hi:#f2f2f2; --cell-lo:#8a8a8a; --cell-sel:#e7e2b8;
+    --btn:#fff; --btn-hover:#f0eee8; --accent:#1f6feb; --danger:#c62828;
+    --shadow:0 2px 10px rgba(0,0,0,.12);
+}
+@media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+        --bg:#14161a; --panel:#1d2026; --text:#eee; --muted:#9aa0a8; --line:#333842;
+        --cell:#3a3e46; --cell-hi:#555b66; --cell-lo:#1c1f24; --cell-sel:#5a5532;
+        --btn:#262a31; --btn-hover:#2f343c; --accent:#58a6ff; --danger:#ef5350;
+        --shadow:0 2px 10px rgba(0,0,0,.5);
+    }
+}
+:root[data-theme="dark"]{
+    --bg:#14161a; --panel:#1d2026; --text:#eee; --muted:#9aa0a8; --line:#333842;
+    --cell:#3a3e46; --cell-hi:#555b66; --cell-lo:#1c1f24; --cell-sel:#5a5532;
+    --btn:#262a31; --btn-hover:#2f343c; --accent:#58a6ff; --danger:#ef5350;
+    --shadow:0 2px 10px rgba(0,0,0,.5);
+}
+*{ box-sizing:border-box; margin:0; padding:0; }
+html{ -webkit-text-size-adjust:100%; }
+body{ background:var(--bg); color:var(--text); font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+      padding:12px 16px 24px; min-height:100vh; -webkit-tap-highlight-color:transparent; }
+.wrap{ width:100%; max-width:480px; margin:0 auto; }
+
+/* header: score, next balls, best */
+.top{ display:grid; grid-template-columns:1fr auto 1fr; align-items:center; gap:8px; margin-bottom:10px; }
+.stat{ background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:6px 10px; box-shadow:var(--shadow); min-width:0; }
+.stat.r{ text-align:right; }
+.stat .k{ font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; }
+.stat .v{ font-size:22px; font-weight:700; font-variant-numeric:tabular-nums; line-height:1.2; }
+.next{ display:flex; gap:6px; background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:6px 8px; box-shadow:var(--shadow); }
+.next .slot{ width:26px; height:26px; position:relative; }
+.sub{ display:flex; justify-content:space-between; color:var(--muted); font-size:13px; margin:-2px 2px 8px; font-variant-numeric:tabular-nums; }
+
+/* board */
+.board{ display:grid; grid-template-columns:repeat(9,1fr); gap:0; width:100%; aspect-ratio:1; border:3px solid var(--cell-lo);
+        border-radius:4px; background:var(--cell-lo); touch-action:manipulation; user-select:none; -webkit-user-select:none; position:relative; }
+.cell{ position:relative; background:var(--cell); border:2px solid; border-color:var(--cell-hi) var(--cell-lo) var(--cell-lo) var(--cell-hi); cursor:pointer; }
+.cell.sel{ background:var(--cell-sel); }
+.cell.bad{ animation:bad .3s; }
+@keyframes bad{ 0%,100%{ background:var(--cell); } 50%{ background:var(--danger); } }
+
+/* balls: glossy, drawn with gradients */
+.ball{ position:absolute; inset:9%; border-radius:50%;
+       background:radial-gradient(circle at 34% 30%, rgba(255,255,255,.95) 0 7%, rgba(255,255,255,0) 30%),
+                  radial-gradient(circle at 50% 55%, var(--c1) 0 45%, var(--c2) 100%);
+       box-shadow:inset -2px -3px 5px rgba(0,0,0,.35), 1px 2px 3px rgba(0,0,0,.35); }
+.ball.dot{ inset:34%; box-shadow:inset -1px -1px 2px rgba(0,0,0,.3); }
+.ball.jump{ animation:jump .5s ease-in-out infinite; }
+@keyframes jump{ 0%,100%{ transform:translateY(6%) scale(1.04,.94); } 50%{ transform:translateY(-14%) scale(.96,1.04); } }
+.ball.grow{ animation:grow .22s ease-out; }
+@keyframes grow{ from{ transform:scale(.3); } to{ transform:scale(1); } }
+.ball.pop{ animation:pop .3s ease-in forwards; }
+@keyframes pop{ 0%{ transform:scale(1); opacity:1; } 40%{ transform:scale(1.2); } 100%{ transform:scale(0); opacity:0; } }
+.next .ball{ inset:0; }
+
+.c0{ --c1:#ff3b30; --c2:#8b0000; }   /* đỏ */
+.c1{ --c1:#34c759; --c2:#0b5a1f; }   /* xanh lá */
+.c2{ --c1:#3a7bff; --c2:#0b2a7a; }   /* xanh dương */
+.c3{ --c1:#ffd60a; --c2:#9a7b00; }   /* vàng */
+.c4{ --c1:#33d6e6; --c2:#066b75; }   /* xanh ngọc */
+.c5{ --c1:#e04ce0; --c2:#6a0a6a; }   /* tím */
+.c6{ --c1:#b5651d; --c2:#4a2408; }   /* nâu */
+
+/* buttons */
+.bar{ display:flex; flex-wrap:wrap; gap:8px; margin-top:12px; }
+.bar button{ flex:1 1 auto; }
+button{ font:inherit; font-size:14px; color:var(--text); background:var(--btn); border:1px solid var(--line); border-radius:8px;
+        padding:9px 12px; cursor:pointer; box-shadow:var(--shadow); white-space:nowrap; }
+button:hover{ background:var(--btn-hover); }
+button:disabled{ opacity:.45; cursor:default; }
+button.icon{ flex:0 0 auto; width:42px; padding:9px 0; display:inline-flex; align-items:center; justify-content:center; }
+#msg{ min-height:20px; text-align:center; color:var(--muted); font-size:14px; margin-top:10px; }
+
+/* dialogs */
+.dlg{ position:fixed; inset:0; background:rgba(0,0,0,.5); display:flex; align-items:center; justify-content:center; padding:16px; z-index:10; }
+.dlg[hidden]{ display:none; }
+.box{ background:var(--panel); color:var(--text); border-radius:12px; padding:18px; width:100%; max-width:360px; box-shadow:0 10px 40px rgba(0,0,0,.4); }
+.box h2{ font-size:18px; margin-bottom:10px; }
+.box p{ color:var(--muted); font-size:14px; line-height:1.45; margin-bottom:10px; }
+.box input{ font:inherit; width:100%; padding:9px 10px; border:1px solid var(--line); border-radius:8px; background:var(--bg); color:var(--text); margin-bottom:12px; }
+.box .acts{ display:flex; gap:8px; justify-content:flex-end; flex-wrap:wrap; }
+.box button.pri{ background:var(--accent); color:#fff; border-color:var(--accent); }
+table.hs{ width:100%; border-collapse:collapse; font-size:14px; margin-bottom:12px; font-variant-numeric:tabular-nums; }
+table.hs td{ padding:5px 4px; border-bottom:1px solid var(--line); }
+table.hs td:first-child{ color:var(--muted); width:2em; }
+table.hs td.s{ text-align:right; font-weight:600; }
+table.hs td.d{ text-align:right; color:var(--muted); font-size:12px; white-space:nowrap; }
+table.hs tr.me td{ color:var(--accent); }
+.rules{ font-size:14px; line-height:1.5; color:var(--text); padding-left:18px; margin-bottom:12px; }
+.rules li{ margin-bottom:4px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+    <div class="top">
+        <div class="stat"><div class="k">Điểm</div><div class="v" id="score">0</div></div>
+        <div class="next" id="next" title="3 bi tiếp theo" aria-label="3 bi tiếp theo"></div>
+        <div class="stat r"><div class="k">Kỷ lục</div><div class="v" id="best">0</div></div>
+    </div>
+    <div class="sub"><span id="time">00:00</span><span id="info"></span></div>
+
+    <div class="board" id="board" role="grid" aria-label="Bàn chơi 9×9"></div>
+
+    <div id="msg"></div>
+
+    <div class="bar">
+        <button id="newBtn">Ván mới</button>
+        <button id="undoBtn" disabled title="Đi lại nước vừa rồi (1 lần)">↶ Đi lại</button>
+        <button id="saveBtn" title="Lưu ván này vào máy">Lưu ván</button>
+        <button id="loadBtn" title="Mở ván đã lưu">Mở ván</button>
+        <button id="hsBtn">Bảng điểm</button>
+        <button id="helpBtn" class="icon" title="Luật chơi" aria-label="Luật chơi">?</button>
+        <button id="soundBtn" class="icon" title="Âm thanh" aria-label="Âm thanh"></button>
+    </div>
+</div>
+
+<div class="dlg" id="dlg" hidden><div class="box" id="dlgBox" role="dialog" aria-modal="true"></div></div>
+
+<script>
+'use strict';
+/* =========================================================
+   Lines 98: 9x9 board, 7 colours. Move a ball along a free path
+   (up/down/left/right); 5+ of one colour in a row (any direction)
+   disappear. A move that clears nothing brings the 3 next balls,
+   shown as small dots where they will land.
+   Saved in this browser only (localStorage): the game in progress,
+   one manual save, the top 10 and the sound setting.
+   ========================================================= */
+const N = 9, COLORS = 7, NEXT = 3, START = 5, MIN_LINE = 5;
+const POINTS = {5: 10, 6: 12, 7: 18, 8: 28, 9: 42};       // per line, by its length
+const STEP_MS = 40;                                        // ball move, per square
+const KEY = {game: 'lines98.game', slot: 'lines98.slot', top: 'lines98.top', sound: 'lines98.sound', name: 'lines98.name'};
+const DIRS = [[1, 0], [0, 1], [1, 1], [1, -1]];
+
+const $ = id => document.getElementById(id);
+const store = {
+    get(k){ try{ return JSON.parse(localStorage.getItem(k)); }catch(e){ return null; } },
+    set(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); return true; }catch(e){ return false; } },
+    del(k){ try{ localStorage.removeItem(k); }catch(e){} }
+};
+
+/* ---------- state ---------- */
+let S;                  // {grid[81]: colour or -1, next: [{c, p}], score, time (s), over}
+let sel = -1;           // selected square
+let busy = false;       // an animation is running
+let undo = null;        // the state before the last move (one step)
+let soundOn = store.get(KEY.sound) !== false;
+let lastTick = 0;
+
+const rnd = n => Math.floor(Math.random() * n);
+const empties = (grid, skip) => { const e = []; for(let i = 0; i < N * N; i++) if(grid[i] < 0 && !(skip && skip.has(i))) e.push(i); return e; };
+const clone = s => JSON.parse(JSON.stringify(s));
+
+/* the 3 next balls: colour and the empty square they will land on */
+function makeNext(grid){
+    const free = empties(grid), out = [];
+    for(let k = 0; k < NEXT && free.length; k++){
+        out.push({c: rnd(COLORS), p: free.splice(rnd(free.length), 1)[0]});
+    }
+    return out;
+}
+
+function newGame(){
+    const grid = Array(N * N).fill(-1);
+    const free = empties(grid);
+    for(let k = 0; k < START; k++) grid[free.splice(rnd(free.length), 1)[0]] = rnd(COLORS);
+    S = {grid, next: makeNext(grid), score: 0, time: 0, over: false};
+    sel = -1; undo = null;
+    save(); render(); say('Chọn một bi, rồi chọn ô trống để di chuyển.');
+}
+
+/* ---------- rules ---------- */
+/* shortest free path from a to b (BFS, 4 directions), or null */
+function path(grid, a, b){
+    const prev = new Int16Array(N * N).fill(-1);
+    prev[a] = a;
+    const q = [a];
+    for(let h = 0; h < q.length; h++){
+        const i = q[h];
+        if(i === b) break;
+        const x = i % N, y = (i - x) / N;
+        for(const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]){
+            const nx = x + dx, ny = y + dy, j = ny * N + nx;
+            if(nx < 0 || ny < 0 || nx >= N || ny >= N || prev[j] >= 0 || grid[j] >= 0) continue;
+            prev[j] = i; q.push(j);
+        }
+    }
+    if(prev[b] < 0) return null;
+    const out = [b];
+    while(out[0] !== a) out.unshift(prev[out[0]]);
+    return out;
+}
+
+/* lines of 5+ through the given squares: {cells: Set, points} */
+function findLines(grid, squares){
+    const cells = new Set(), seen = new Set();
+    let points = 0;
+    for(const i of squares){
+        const c = grid[i];
+        if(c < 0) continue;
+        const x0 = i % N, y0 = (i - x0) / N;
+        for(const [dx, dy] of DIRS){
+            const line = [i];
+            for(const s of [1, -1]){
+                let x = x0 + dx * s, y = y0 + dy * s;
+                while(x >= 0 && y >= 0 && x < N && y < N && grid[y * N + x] === c){ line.push(y * N + x); x += dx * s; y += dy * s; }
+            }
+            if(line.length < MIN_LINE) continue;
+            const key = Math.min(...line) + ':' + dx + dy;          // one line counted once
+            if(seen.has(key)) continue;
+            seen.add(key);
+            line.forEach(j => cells.add(j));
+            points += POINTS[line.length];
+        }
+    }
+    return {cells, points};
+}
+
+/* ---------- a move ---------- */
+async function move(a, b){
+    const route = path(S.grid, a, b);
+    if(!route){ beep('bad'); flash(b); say('Không có đường đi tới ô đó.'); return; }
+    busy = true;
+    undo = clone(S);
+    const c = S.grid[a];
+    sel = -1;
+    for(let k = 1; k < route.length; k++){
+        S.grid[route[k - 1]] = -1; S.grid[route[k]] = c;
+        render();
+        if(k % 2) beep('step');
+        await wait(STEP_MS);
+    }
+    const hit = findLines(S.grid, [b]);
+    if(hit.cells.size){
+        await clear(hit);                       // a line: no new balls this turn
+    }else{
+        await spawn();
+    }
+    busy = false;
+    if(!S.over && !empties(S.grid).length) S.over = true;
+    save(); render();
+    if(S.over) return gameOver();
+}
+
+async function clear(hit){
+    beep('pop');
+    hit.cells.forEach(i => { const b = cellBall(i); if(b) b.classList.add('pop'); });
+    await wait(300);
+    hit.cells.forEach(i => S.grid[i] = -1);
+    S.score += hit.points;
+    say('+' + hit.points + ' điểm (' + hit.cells.size + ' bi)');
+}
+
+/* the next balls land on their dots (a dot whose square was taken moves to a
+   random empty one); lines they make are cleared and scored too */
+async function spawn(){
+    const landed = [];
+    for(const n of S.next){
+        let p = n.p;
+        if(S.grid[p] >= 0){
+            const free = empties(S.grid);
+            if(!free.length) break;
+            p = free[rnd(free.length)];
+        }
+        S.grid[p] = n.c;
+        landed.push(p);
+    }
+    S.next = makeNext(S.grid);
+    render(landed);
+    beep('drop');
+    await wait(220);
+    const hit = findLines(S.grid, landed);
+    if(hit.cells.size) await clear(hit);       // the new dots were on empty squares: still are
+    if(!empties(S.grid).length) S.over = true;
+    else say('');
+}
+
+/* ---------- drawing ---------- */
+const board = $('board');
+const cells = [];
+for(let i = 0; i < N * N; i++){
+    const d = document.createElement('div');
+    d.className = 'cell';
+    d.setAttribute('role', 'gridcell');
+    d.addEventListener('click', () => tap(i));
+    board.appendChild(d);
+    cells.push(d);
+}
+function cellBall(i){ return cells[i].querySelector('.ball:not(.dot)'); }
+
+function render(grown){
+    const dots = new Map(S.next.map(n => [n.p, n.c]));
+    const g = new Set(grown || []);
+    for(let i = 0; i < N * N; i++){
+        const c = S.grid[i], d = cells[i];
+        let want = '';
+        if(c >= 0) want = 'ball c' + c + (i === sel ? ' jump' : '') + (g.has(i) ? ' grow' : '');
+        else if(dots.has(i)) want = 'ball dot c' + dots.get(i);
+        const cur = d.firstChild;
+        if(!want){ if(cur) d.textContent = ''; }
+        else if(!cur){ const b = document.createElement('div'); b.className = want; d.appendChild(b); }
+        else if(cur.className !== want) cur.className = want;
+        d.classList.toggle('sel', i === sel);
+    }
+    const nx = $('next');
+    nx.textContent = '';
+    for(let k = 0; k < NEXT; k++){
+        const s = document.createElement('div');
+        s.className = 'slot';
+        if(S.next[k]){ const b = document.createElement('div'); b.className = 'ball c' + S.next[k].c; s.appendChild(b); }
+        nx.appendChild(s);
+    }
+    $('score').textContent = S.score;
+    $('best').textContent = Math.max(S.score, best());
+    $('info').textContent = (N * N - empties(S.grid).length) + '/81 ô';
+    $('undoBtn').disabled = !undo || busy || S.over;
+    showTime();
+}
+
+function flash(i){ cells[i].classList.remove('bad'); void cells[i].offsetWidth; cells[i].classList.add('bad'); }
+function say(t){ $('msg').textContent = t || ''; }
+const wait = ms => new Promise(r => setTimeout(r, ms));
+
+/* ---------- input ---------- */
+function tap(i){
+    unlockAudio();
+    if(busy || S.over) return;
+    if(S.grid[i] >= 0){
+        sel = sel === i ? -1 : i;
+        beep('select');
+        render();
+    }else if(sel >= 0){
+        move(sel, i);
+    }
+}
+
+$('newBtn').onclick = () => {
+    if(!S.over && S.score > 0) return confirmBox('Ván mới?', 'Ván đang chơi (' + S.score + ' điểm) sẽ bị bỏ.', 'Ván mới', newGame);
+    newGame();
+};
+$('undoBtn').onclick = () => {
+    if(!undo || busy) return;
+    S = undo; undo = null; sel = -1;
+    save(); render(); say('Đã đi lại nước vừa rồi.');
+};
+$('saveBtn').onclick = () => {
+    if(S.over) return say('Ván đã kết thúc, không cần lưu.');
+    const old = store.get(KEY.slot);
+    const doIt = () => { store.set(KEY.slot, {...clone(S), savedAt: Date.now()}) ? say('Đã lưu ván (' + S.score + ' điểm).') : say('Trình duyệt không cho lưu.'); };
+    if(old) confirmBox('Lưu ván?', 'Ván đã lưu trước đó (' + old.score + ' điểm, ' + when(old.savedAt) + ') sẽ bị thay.', 'Lưu', doIt);
+    else doIt();
+};
+$('loadBtn').onclick = () => {
+    const s = store.get(KEY.slot);
+    if(!valid(s)) return say('Chưa có ván nào được lưu.');
+    confirmBox('Mở ván đã lưu?', s.score + ' điểm, lưu lúc ' + when(s.savedAt) + '. Ván đang chơi sẽ bị thay.', 'Mở ván', () => {
+        S = {grid: s.grid, next: s.next, score: s.score, time: s.time || 0, over: false};
+        sel = -1; undo = null;
+        save(); render(); say('Đã mở ván đã lưu.');
+    });
+};
+$('hsBtn').onclick = () => showTop();
+$('helpBtn').onclick = () => showHelp();
+$('soundBtn').onclick = () => { soundOn = !soundOn; store.set(KEY.sound, soundOn); setSoundIcon(); unlockAudio(); beep('select'); };
+/* speaker icon drawn as SVG (emoji fonts are missing on some devices) */
+function setSoundIcon(){
+    const b = $('soundBtn');
+    b.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'
+        + '<path d="M4 9h4l5-4v14l-5-4H4z" fill="currentColor"/>'
+        + (soundOn ? '<path d="M16.5 8.5a5 5 0 0 1 0 7M19.5 5.5a9 9 0 0 1 0 13"/>' : '<path d="M17 9l5 6M22 9l-5 6"/>') + '</svg>';
+    b.title = soundOn ? 'Tắt âm thanh' : 'Bật âm thanh';
+    b.setAttribute('aria-pressed', String(!soundOn));
+}
+
+document.addEventListener('keydown', e => {
+    if(!$('dlg').hidden){ if(e.key === 'Escape' && !$('dName')) closeDlg(); return; }
+    if((e.ctrlKey || e.metaKey) && e.key === 'z'){ e.preventDefault(); $('undoBtn').click(); }
+});
+
+/* ---------- time ---------- */
+function showTime(){ const t = Math.floor(S.time); $('time').textContent = String(Math.floor(t / 60)).padStart(2, '0') + ':' + String(t % 60).padStart(2, '0'); }
+setInterval(() => {
+    if(!S || S.over || document.hidden || !$('dlg').hidden) return;
+    S.time += 1; showTime();
+    if(++lastTick % 10 === 0) save();
+}, 1000);
+
+/* ---------- saving ---------- */
+function valid(s){
+    return s && Array.isArray(s.grid) && s.grid.length === N * N && s.grid.every(c => Number.isInteger(c) && c >= -1 && c < COLORS)
+        && Array.isArray(s.next) && s.next.every(n => n && Number.isInteger(n.c) && Number.isInteger(n.p) && n.p >= 0 && n.p < N * N)
+        && Number.isFinite(s.score);
+}
+function save(){ store.set(KEY.game, S); }
+function when(t){ if(!t) return '?'; const d = new Date(t); const p = n => String(n).padStart(2, '0'); return p(d.getHours()) + ':' + p(d.getMinutes()) + ' ' + p(d.getDate()) + '/' + p(d.getMonth() + 1); }
+
+/* ---------- top 10 (this device) ---------- */
+function topList(){ const t = store.get(KEY.top); return Array.isArray(t) ? t.filter(x => x && Number.isFinite(x.score)) : []; }
+function best(){ const t = topList(); return t.length ? t[0].score : 0; }
+
+function gameOver(){
+    beep('over');
+    say('Hết chỗ trống: ván kết thúc với ' + S.score + ' điểm.');
+    const t = topList();
+    const qualifies = S.score > 0 && (t.length < 10 || S.score > t[t.length - 1].score);
+    if(!qualifies){
+        return openDlg('<h2>Hết ván</h2><p>Bạn được <b>' + S.score + '</b> điểm.</p><div class="acts"><button id="dClose">Đóng</button><button class="pri" id="dNew">Ván mới</button></div>',
+            () => { $('dClose').onclick = closeDlg; $('dNew').onclick = () => { closeDlg(); newGame(); }; });
+    }
+    openDlg('<h2>Kỷ lục mới!</h2><p>Bạn được <b>' + S.score + '</b> điểm, vào top 10 trên máy này. Nhập tên:</p>'
+        + '<input id="dName" maxlength="20" autocomplete="nickname"><div class="acts"><button class="pri" id="dOk">Lưu điểm</button></div>', () => {
+        const inp = $('dName');
+        inp.value = store.get(KEY.name) || '';
+        inp.focus(); inp.select();
+        const ok = () => {
+            const name = inp.value.trim().slice(0, 20) || 'Người chơi';
+            store.set(KEY.name, name);
+            const entry = {name, score: S.score, time: Math.floor(S.time), at: Date.now()};
+            const list = topList().concat(entry).sort((a, b) => b.score - a.score || a.at - b.at).slice(0, 10);
+            store.set(KEY.top, list);
+            render();
+            showTop(entry.at);
+        };
+        $('dOk').onclick = ok;
+        inp.onkeydown = e => { if(e.key === 'Enter') ok(); };
+    });
+}
+
+function showTop(mark){
+    const t = topList();
+    const esc = s => String(s).replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'})[c]);
+    const rows = t.length ? t.map((x, i) => '<tr' + (x.at === mark ? ' class="me"' : '') + '><td>' + (i + 1) + '</td><td>' + esc(x.name) + '</td><td class="s">' + x.score
+        + '</td><td class="d">' + when(x.at) + '</td></tr>').join('') : '<tr><td colspan="4">Chưa có điểm nào.</td></tr>';
+    openDlg('<h2>Bảng điểm (máy này)</h2><table class="hs">' + rows + '</table><div class="acts">'
+        + (t.length ? '<button id="dClear">Xóa bảng</button>' : '') + (S.over ? '<button id="dNew">Ván mới</button>' : '')
+        + '<button class="pri" id="dClose">Đóng</button></div>', () => {
+        $('dClose').onclick = closeDlg;
+        if($('dNew')) $('dNew').onclick = () => { closeDlg(); newGame(); };
+        if($('dClear')) $('dClear').onclick = () => confirmBox('Xóa bảng điểm?', 'Mọi điểm đã lưu trên máy này sẽ bị xóa.', 'Xóa', () => { store.del(KEY.top); render(); showTop(); });
+    });
+}
+
+function showHelp(){
+    openDlg('<h2>Luật chơi</h2><ul class="rules">'
+        + '<li>Chạm vào một bi để chọn, rồi chạm vào ô trống: bi đi tới đó nếu có đường (lên, xuống, trái, phải; không nhảy qua bi khác).</li>'
+        + '<li>Xếp <b>5 bi cùng màu trở lên</b> thành hàng ngang, dọc hoặc chéo để ăn điểm: 5 bi = 10, 6 = 12, 7 = 18, 8 = 28, 9 = 42.</li>'
+        + '<li>Nếu nước đi không ăn được hàng nào, 3 bi mới rơi xuống ở chỗ các chấm nhỏ (màu như ở ô "tiếp theo" phía trên).</li>'
+        + '<li>Ăn được hàng thì không có bi mới ở lượt đó.</li>'
+        + '<li>Bàn đầy là hết ván. Mỗi ván có thể đi lại 1 nước.</li>'
+        + '<li>Ván đang chơi tự lưu trên máy này; "Lưu ván" / "Mở ván" giữ thêm một ván riêng.</li>'
+        + '</ul><div class="acts"><button class="pri" id="dClose">Đã hiểu</button></div>', () => { $('dClose').onclick = closeDlg; });
+}
+
+/* ---------- dialogs ---------- */
+function openDlg(html, init){ $('dlgBox').innerHTML = html; $('dlg').hidden = false; init && init(); }
+function closeDlg(){ $('dlg').hidden = true; $('dlgBox').innerHTML = ''; }
+function confirmBox(title, text, okText, ok){
+    openDlg('<h2>' + title + '</h2><p>' + text + '</p><div class="acts"><button id="dNo">Hủy</button><button class="pri" id="dYes">' + okText + '</button></div>', () => {
+        $('dNo').onclick = closeDlg;
+        $('dYes').onclick = () => { closeDlg(); ok(); };
+    });
+}
+$('dlg').addEventListener('click', e => { if(e.target === $('dlg') && !$('dName')) closeDlg(); });
+
+/* ---------- sound (made in code, no files) ---------- */
+let ac = null;
+function unlockAudio(){
+    if(!soundOn) return;
+    try{
+        if(!ac) ac = new (window.AudioContext || window.webkitAudioContext)();
+        if(ac.state === 'suspended') ac.resume();
+    }catch(e){ ac = null; }
+}
+function tone(freq, dur, type, vol, when, slide){
+    const t = ac.currentTime + (when || 0);
+    const o = ac.createOscillator(), g = ac.createGain();
+    o.type = type || 'sine';
+    o.frequency.setValueAtTime(freq, t);
+    if(slide) o.frequency.exponentialRampToValueAtTime(slide, t + dur);
+    g.gain.setValueAtTime(vol || 0.15, t);
+    g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+    o.connect(g).connect(ac.destination);
+    o.start(t); o.stop(t + dur + 0.02);
+}
+function beep(kind){
+    if(!soundOn || !ac) return;
+    try{
+        switch(kind){
+            case 'select': tone(660, 0.06, 'triangle', 0.12); break;
+            case 'step':   tone(420, 0.03, 'sine', 0.05); break;
+            case 'drop':   tone(300, 0.08, 'triangle', 0.1, 0, 180); break;
+            case 'bad':    tone(140, 0.18, 'square', 0.08); break;
+            case 'pop':    [523, 659, 784, 1047].forEach((f, k) => tone(f, 0.12, 'triangle', 0.12, k * 0.06)); break;
+            case 'over':   [392, 330, 262].forEach((f, k) => tone(f, 0.25, 'sine', 0.14, k * 0.18)); break;
+        }
+    }catch(e){}
+}
+
+/* ---------- start ---------- */
+setSoundIcon();
+const saved = store.get(KEY.game);
+if(valid(saved) && !saved.over){
+    S = {grid: saved.grid, next: saved.next, score: saved.score, time: saved.time || 0, over: false};
+    render(); say('Tiếp tục ván đang chơi.');
+}else{
+    newGame();
+    if(!store.get(KEY.name) && !topList().length) showHelp();
+}
+document.addEventListener('visibilitychange', () => { if(document.hidden && S) save(); });
+</script>
+</body>
+</html>
