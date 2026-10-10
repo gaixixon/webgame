@@ -12,47 +12,47 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Games">
 <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#15171e" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
 <style>
-/* Clean white and blue (in the style of the popular Sudoku apps): flat white
-   board, navy box lines and givens, blue entries, light-blue highlights */
+/* White and black: flat white board, black box lines and givens, dark grey
+   entries, grey highlights; red only for a repeated number */
 :root{
-    --page:#ffffff; --text:#344861; --muted:#6e7c8c; --line:#dfe5ee;
-    --panel:#ffffff; --glass:#ffffff; --glass-line:#dfe5ee;
-    --cell:#ffffff; --box-alt:#ffffff; --grid:#bec6d4; --frame:#344861;   /* thin lines; box lines and border */
-    --given:#344861; --user:#325aaf; --note:#6e7c8c;
-    --peer:#e2ebf3; --same:#c3d7ea; --same-text:#325aaf; --sel:#bbdefb;
-    --accent:#325aaf; --accent2:#325aaf; --tool:#6e7c8c; --danger:#e55c6c; --bad-bg:#f7cfd6; --flash:#bbdefb;
-    --pad-text:#325aaf;
-    --btn:#ffffff; --btn-hover:#f3f6fa; --bg:#eef3f9;
-    --grad:#325aaf;                                    /* blue: white text on it */
-    --shadow:0 1px 3px rgba(52,72,97,.12); --shadow-lg:0 2px 8px rgba(52,72,97,.12);
+    --page:#ffffff; --text:#111111; --muted:#6b6b6b; --line:#e2e2e2;
+    --panel:#ffffff; --glass:#ffffff; --glass-line:#e2e2e2;
+    --cell:#ffffff; --box-alt:#ffffff; --grid:#cfcfcf; --frame:#111111;   /* thin lines; box lines and border */
+    --given:#111111; --user:#5a5a5a; --note:#7a7a7a;
+    --peer:#f2f2f2; --same:#dedede; --same-text:#111111; --sel:#cdcdcd;
+    --accent:#111111; --accent2:#111111; --tool:#555555; --danger:#d93a3a; --bad-bg:#f9d6d6; --flash:#d6d6d6;
+    --pad-text:#111111;
+    --btn:#ffffff; --btn-hover:#f2f2f2; --bg:#f2f2f2;
+    --grad:#111111;                                    /* black: white text on it */
+    --shadow:0 1px 3px rgba(0,0,0,.1); --shadow-lg:0 2px 8px rgba(0,0,0,.1);
 }
 @media (prefers-color-scheme: dark){
     :root:not([data-theme="light"]){
-        --page:#15171e; --text:#d7deec; --muted:#8c96ab; --line:#2c3142;
-        --panel:#1e212b; --glass:#1e212b; --glass-line:#2c3142;
-        --cell:#1e212b; --box-alt:#1e212b; --grid:#363c50; --frame:#8c96ab;
-        --given:#d7deec; --user:#6f9cff; --note:#8c96ab;
-        --peer:#262c3c; --same:#2f4166; --same-text:#9cbcff; --sel:#2f4f86;
-        --accent:#5b8def; --accent2:#5b8def; --tool:#8c96ab; --danger:#ff6b7a; --bad-bg:#57263a; --flash:#2f4f86;
-        --pad-text:#6f9cff;
-        --btn:#1e212b; --btn-hover:#262a36; --bg:#262a36;
-        --grad:#3f6fd8;
-        --shadow:0 1px 3px rgba(0,0,0,.4); --shadow-lg:0 2px 8px rgba(0,0,0,.45);
+        --page:#000000; --text:#f2f2f2; --muted:#9a9a9a; --line:#2a2a2a;
+        --panel:#141414; --glass:#141414; --glass-line:#2a2a2a;
+        --cell:#121212; --box-alt:#121212; --grid:#333333; --frame:#d9d9d9;
+        --given:#ffffff; --user:#b5b5b5; --note:#8a8a8a;
+        --peer:#1e1e1e; --same:#333333; --same-text:#ffffff; --sel:#474747;
+        --accent:#f2f2f2; --accent2:#f2f2f2; --tool:#a8a8a8; --danger:#ff6464; --bad-bg:#4a1c1c; --flash:#3d3d3d;
+        --pad-text:#f2f2f2;
+        --btn:#141414; --btn-hover:#1f1f1f; --bg:#1f1f1f;
+        --grad:#f2f2f2;
+        --shadow:0 1px 3px rgba(0,0,0,.5); --shadow-lg:0 2px 8px rgba(0,0,0,.5);
     }
 }
 :root[data-theme="dark"]{
-    --page:#15171e; --text:#d7deec; --muted:#8c96ab; --line:#2c3142;
-    --panel:#1e212b; --glass:#1e212b; --glass-line:#2c3142;
-    --cell:#1e212b; --box-alt:#1e212b; --grid:#363c50; --frame:#8c96ab;
-    --given:#d7deec; --user:#6f9cff; --note:#8c96ab;
-    --peer:#262c3c; --same:#2f4166; --same-text:#9cbcff; --sel:#2f4f86;
-    --accent:#5b8def; --accent2:#5b8def; --tool:#8c96ab; --danger:#ff6b7a; --bad-bg:#57263a; --flash:#2f4f86;
-    --pad-text:#6f9cff;
-    --btn:#1e212b; --btn-hover:#262a36; --bg:#262a36;
-    --grad:#3f6fd8;
-    --shadow:0 1px 3px rgba(0,0,0,.4); --shadow-lg:0 2px 8px rgba(0,0,0,.45);
+    --page:#000000; --text:#f2f2f2; --muted:#9a9a9a; --line:#2a2a2a;
+    --panel:#141414; --glass:#141414; --glass-line:#2a2a2a;
+    --cell:#121212; --box-alt:#121212; --grid:#333333; --frame:#d9d9d9;
+    --given:#ffffff; --user:#b5b5b5; --note:#8a8a8a;
+    --peer:#1e1e1e; --same:#333333; --same-text:#ffffff; --sel:#474747;
+    --accent:#f2f2f2; --accent2:#f2f2f2; --tool:#a8a8a8; --danger:#ff6464; --bad-bg:#4a1c1c; --flash:#3d3d3d;
+    --pad-text:#f2f2f2;
+    --btn:#141414; --btn-hover:#1f1f1f; --bg:#1f1f1f;
+    --grad:#f2f2f2;
+    --shadow:0 1px 3px rgba(0,0,0,.5); --shadow-lg:0 2px 8px rgba(0,0,0,.5);
 }
 *{ box-sizing:border-box; margin:0; padding:0; }
 html{ -webkit-text-size-adjust:100%; background:var(--page); }
@@ -63,7 +63,7 @@ body{ background:var(--page); color:var(--text);
 
 /* header: level badge, timer, puzzles solved; then the progress bar */
 .top{ display:flex; align-items:center; gap:8px; margin-bottom:10px; }
-.badge{ display:flex; align-items:baseline; gap:6px; padding:7px 14px; border-radius:999px; color:#fff; font-weight:800;
+.badge{ display:flex; align-items:baseline; gap:6px; padding:7px 14px; border-radius:999px; color:var(--page); font-weight:800;
         background:var(--grad); box-shadow:var(--shadow); }
 .badge .k{ font-size:12px; font-weight:600; opacity:.9; text-transform:uppercase; letter-spacing:.05em; }
 .badge #level{ font-size:20px; line-height:1; font-variant-numeric:tabular-nums; }
@@ -82,7 +82,7 @@ body{ background:var(--page); color:var(--text);
 .board{ display:grid; grid-template-columns:repeat(9,1fr); width:100%; aspect-ratio:1; padding:2px;
         background:var(--frame); border-radius:4px; box-shadow:var(--shadow-lg); user-select:none; -webkit-user-select:none; touch-action:manipulation; overflow:hidden; }
 .cell{ position:relative; background:var(--cell); display:flex; align-items:center; justify-content:center; cursor:pointer;
-       box-shadow:inset 0 0 0 .5px var(--grid); font-size:min(6.2vw, 28px); font-weight:600; font-variant-numeric:tabular-nums; color:var(--user);
+       box-shadow:inset 0 0 0 .5px var(--grid); font-size:min(6.2vw, 28px); font-weight:400; font-variant-numeric:tabular-nums; color:var(--user);
        transition:background-color .15s; }
 .cell.alt{ background:var(--box-alt); }
 .cell.bt{ margin-top:2px; }                 /* the lines between 3x3 boxes: the navy frame showing through */
@@ -111,7 +111,7 @@ body{ background:var(--page); color:var(--text);
 /* number pad: round buttons that press down; a number all placed gets a ✓ */
 .pad{ display:grid; grid-template-columns:repeat(9,1fr); gap:5px; margin-top:14px; }
 /* number pad: big flat blue digits; a number all placed fades, with a ✓ */
-.pad button{ padding:4px 0 2px; border:0; border-radius:8px; background:transparent; box-shadow:none; font-size:34px; font-weight:400; line-height:1.05;
+.pad button{ padding:4px 0 2px; border:0; border-radius:8px; background:transparent; box-shadow:none; font-size:34px; font-weight:300; line-height:1.05;
              color:var(--pad-text); display:flex; flex-direction:column; align-items:center; transition:transform .06s, background-color .1s; }
 .pad button:hover{ background:var(--btn-hover); }
 .pad button:active:not(:disabled){ transform:scale(.92); background:var(--peer); }
@@ -151,10 +151,10 @@ button.icon{ flex:0 0 auto; width:42px; padding:9px 0; }
 .box p{ color:var(--muted); font-size:14px; line-height:1.45; margin-bottom:10px; }
 .box .acts{ display:flex; gap:8px; justify-content:flex-end; flex-wrap:wrap; }
 .box button{ border-radius:999px; }
-.box button.pri{ background:var(--grad); color:#fff; border-color:transparent; }
-.box .band{ margin:-18px -18px 14px; padding:18px; color:#fff; background:var(--grad); }
+.box button.pri{ background:var(--grad); color:var(--page); border-color:transparent; }
+.box .band{ margin:-18px -18px 14px; padding:18px; color:var(--page); background:var(--grad); }
 .box .band h2{ margin:0 0 2px; font-size:21px; }
-.box .band p{ color:rgba(255,255,255,.9); margin:0; }
+.box .band p{ color:var(--page); opacity:.85; margin:0; }
 .box .big{ display:flex; gap:10px; margin-bottom:12px; }
 .box .big div{ flex:1; background:var(--bg); border-radius:12px; padding:8px 10px; }
 .box .big b{ display:block; font-size:20px; font-variant-numeric:tabular-nums; }
@@ -458,7 +458,7 @@ function confetti(){
     cv.width = W * dpr; cv.height = H * dpr;
     const ctx = cv.getContext('2d');
     ctx.scale(dpr, dpr);
-    const colors = ['#325aaf', '#5b8def', '#bbdefb', '#344861', '#f5a623', '#e55c6c', '#4caf50'];
+    const colors = ['#111111', '#444444', '#777777', '#aaaaaa', '#d4d4d4', '#ffffff'];
     const parts = Array.from({length: 160}, () => ({
         x: W / 2 + (Math.random() - .5) * W * .3, y: H * .45, vx: (Math.random() - .5) * 13, vy: -6 - Math.random() * 11,
         w: 6 + Math.random() * 6, h: 4 + Math.random() * 6, r: Math.random() * 6, vr: (Math.random() - .5) * .35,
