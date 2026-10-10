@@ -101,6 +101,8 @@ body{ background:var(--page); color:var(--text);
               font-size:min(2.7vw, 12px); line-height:1; color:var(--note); font-weight:500; }
 .cell .notes span{ display:flex; align-items:center; justify-content:center; }
 .cell .notes span.hl{ color:var(--accent); font-weight:800; }
+/* a note for a number already placed in its row, column or box */
+.cell .notes span.bad{ color:var(--danger); font-weight:800; }
 .cell.flash{ animation:flash .7s ease; }
 @keyframes flash{ 30%{ background:var(--flash); } }
 .cell.win{ animation:win .6s ease both; }
@@ -333,6 +335,7 @@ function enter(d){
         if(S.v[i]) return say('Ô đã có số: xóa số trước khi ghi chú.');
         snapshot();
         S.notes[i] ^= 1 << (d - 1);
+        if(S.notes[i] & (1 << (d - 1)) && PEERS[i].some(j => S.v[j] === d)) justNoted = i;
     }else{
         snapshot();
         if(S.v[i] === d){ S.v[i] = 0; }
@@ -393,24 +396,32 @@ function after(){
     }
     save(); render();
     if(i >= 0) celebrate(i);
+    if(justNoted >= 0){ pop(cells[justNoted], 'shake'); justNoted = -1; }
 }
 
 /* squares whose number is repeated in their row, column or box (clear
-   mistakes only: a legal but wrong number is not shown) */
+   mistakes only: a legal but wrong number is not shown); also a note for a
+   number already placed in its row, column or box: bad.notes[i] has those
+   notes' bits, and the square holding that number is in the set */
 function clashes(){
     const bad = new Set();
+    bad.notes = new Array(81).fill(0);
     for(let i = 0; i < 81; i++){
         const v = S.v[i];
-        if(v) for(const j of PEERS[i]) if(S.v[j] === v){ bad.add(i); break; }
+        if(v){ for(const j of PEERS[i]) if(S.v[j] === v){ bad.add(i); break; } }
+        else if(S.notes[i]) for(const j of PEERS[i]){
+            const w = S.v[j];
+            if(w && S.notes[i] & (1 << (w - 1))){ bad.notes[i] |= 1 << (w - 1); bad.add(j); }
+        }
     }
     return bad;
 }
 
 /* the square just filled pops in (or shakes when it clashes); a row, column
    or box it completes without a clash flashes */
-let justFilled = -1;
+let justFilled = -1, justNoted = -1;     // justNoted: a square just given a red note (it shakes)
+function pop(c, cls){ c.classList.remove(cls); void c.offsetWidth; c.classList.add(cls); setTimeout(() => c.classList.remove(cls), 750); }
 function celebrate(i){
-    const pop = (c, cls) => { c.classList.remove(cls); void c.offsetWidth; c.classList.add(cls); setTimeout(() => c.classList.remove(cls), 750); };
     const bad = clashes();
     if(bad.has(i)) return pop(cells[i], 'shake');
     pop(cells[i], 'placed');
@@ -514,13 +525,16 @@ function render(){
         if(bad.has(i)) cls += ' bad';
         const anim = (c.className.match(/ (win|flash|placed|shake)/g) || []).join('');
         if(c.className.replace(/ (win|flash|placed|shake)/g, '') !== cls){ c.className = cls + anim; if(!anim) c.style.animationDelay = ''; }
-        const key = v ? 'v' + v : S.notes[i] ? 'n' + S.notes[i] + '/' + sv : '';
+        const key = v ? 'v' + v : S.notes[i] ? 'n' + S.notes[i] + '/' + sv + '/' + bad.notes[i] : '';
         if(c.dataset.k === key) continue;
         c.dataset.k = key;
         if(v){ c.textContent = v; }
         else if(S.notes[i]){
             let h = '<div class="notes">';
-            for(let d = 1; d <= 9; d++) h += '<span' + (d === sv ? ' class="hl"' : '') + '>' + (S.notes[i] & (1 << (d - 1)) ? d : '') + '</span>';
+            for(let d = 1; d <= 9; d++){
+                const b = 1 << (d - 1);
+                h += '<span' + (bad.notes[i] & b ? ' class="bad"' : d === sv ? ' class="hl"' : '') + '>' + (S.notes[i] & b ? d : '') + '</span>';
+            }
             c.innerHTML = h + '</div>';
         }else c.textContent = '';
         c.setAttribute('aria-label', 'Hàng ' + (ROW(i) + 1) + ', cột ' + (COL(i) + 1) + (v ? ': ' + v : ': trống'));
@@ -583,7 +597,7 @@ function showHelp(){
         + '<li>Điền số 1–9 vào các ô trống sao cho <b>mỗi hàng, mỗi cột và mỗi ô 3×3</b> có đủ 1–9, không lặp.</li>'
         + '<li>Chạm vào ô rồi chạm số bên dưới. Chạm lại cùng số để xóa. Trên máy tính: gõ số, mũi tên để di chuyển, Delete để xóa.</li>'
         + '<li><b>Ghi chú</b> (phím N): ghi các số có thể vào ô. Đặt một số sẽ tự xóa ghi chú số đó ở hàng, cột, ô 3×3.</li>'
-        + '<li>Hai số giống nhau trong cùng hàng, cột hoặc ô 3×3 sẽ hiện <b>màu đỏ</b>. Số sai mà không trùng thì không báo; điền đầy bảng sẽ biết đúng hay chưa.</li>'
+        + '<li>Hai số giống nhau trong cùng hàng, cột hoặc ô 3×3 sẽ hiện <b>màu đỏ</b>; ghi chú một số đã có trong hàng, cột hoặc ô 3×3 cũng hiện đỏ. Số sai mà không trùng thì không báo; điền đầy bảng sẽ biết đúng hay chưa.</li>'
         + '<li>Số nhỏ dưới mỗi nút là số lượng còn phải điền. Mỗi câu đố chỉ có một lời giải.</li>'
         + '<li>Bắt đầu ở cấp 1 (dễ). Mỗi câu giải xong lên một cấp, khó hơn một chút.</li>'
         + '<li>Ván đang chơi tự lưu trên máy này.</li>'
