@@ -22,7 +22,7 @@
     --cell:#ffffff; --box-alt:#f1f8ff; --grid:#d6e2ef; --frame:#4f5bd5;
     --given:#16213a; --user:#0b9488; --note:#6b7a90;
     --peer:#e3f1ff; --same:#ffe1d7; --same-text:#c2410c; --sel:#fff3ee; --coral:#ff7a59;
-    --accent:#0ea5a0; --accent2:#5b5fe0; --amber:#f59e0b; --danger:#e5484d;
+    --accent:#0ea5a0; --accent2:#5b5fe0; --amber:#f59e0b; --danger:#e5484d; --bad-bg:#ffdfe3;
     --btn:#ffffff; --btn-hover:#f4f9ff; --bg:#e9f6fb;
     --grad:linear-gradient(120deg, #5458d8, #0d9488);      /* white text on it in both themes */
     --shadow:0 4px 14px rgba(30,64,120,.12); --shadow-lg:0 10px 30px rgba(30,64,120,.18);
@@ -34,7 +34,7 @@
         --cell:#0f1a31; --box-alt:#122340; --grid:#203152; --frame:#6c72f0;
         --given:#f1f5fb; --user:#34d6c3; --note:#8fa0b8;
         --peer:#16294a; --same:#4a2a22; --same-text:#ffb199; --sel:#3a241d; --coral:#ff8a6b;
-        --accent:#2dd4bf; --accent2:#7c80ff; --amber:#fbbf24; --danger:#ff6b6b;
+        --accent:#2dd4bf; --accent2:#7c80ff; --amber:#fbbf24; --danger:#ff6b6b; --bad-bg:#4d1c25;
         --btn:#16223f; --btn-hover:#1c2b4f; --bg:#0d1a33;
         --shadow:0 4px 14px rgba(0,0,0,.4); --shadow-lg:0 10px 30px rgba(0,0,0,.5);
     }
@@ -45,7 +45,7 @@
     --cell:#0f1a31; --box-alt:#122340; --grid:#203152; --frame:#6c72f0;
     --given:#f1f5fb; --user:#34d6c3; --note:#8fa0b8;
     --peer:#16294a; --same:#4a2a22; --same-text:#ffb199; --sel:#3a241d; --coral:#ff8a6b;
-    --accent:#2dd4bf; --accent2:#7c80ff; --amber:#fbbf24; --danger:#ff6b6b;
+    --accent:#2dd4bf; --accent2:#7c80ff; --amber:#fbbf24; --danger:#ff6b6b; --bad-bg:#4d1c25;
     --btn:#16223f; --btn-hover:#1c2b4f; --bg:#0d1a33;
     --shadow:0 4px 14px rgba(0,0,0,.4); --shadow-lg:0 10px 30px rgba(0,0,0,.5);
 }
@@ -87,6 +87,11 @@ body{ background:linear-gradient(165deg, var(--bg1) 0%, var(--bg2) 100%); color:
 .cell.same{ background:var(--same); color:var(--same-text); }
 .cell.same.given{ color:var(--same-text); }
 .cell.sel{ background:var(--sel); box-shadow:inset 0 0 0 2.5px var(--coral), 0 0 14px rgba(255,122,89,.45); z-index:1; border-radius:3px; }
+/* a number repeated in its row, column or box: both squares red */
+.cell.bad{ background:var(--bad-bg); }
+.cell.bad:not(.given){ color:var(--danger); }
+.cell.shake{ animation:shake .35s ease; }
+@keyframes shake{ 20%{ transform:translateX(-4px); } 40%{ transform:translateX(4px); } 60%{ transform:translateX(-3px); } 80%{ transform:translateX(2px); } }
 .cell .notes{ position:absolute; inset:2px; display:grid; grid-template-columns:repeat(3,1fr); grid-template-rows:repeat(3,1fr);
               font-size:min(2.7vw, 12px); line-height:1; color:var(--note); font-weight:500; }
 .cell .notes span{ display:flex; align-items:center; justify-content:center; }
@@ -156,7 +161,7 @@ table.hs td.s{ text-align:right; font-weight:700; color:var(--accent2); }
 table.hs td.d{ text-align:right; color:var(--muted); font-size:12px; }
 .rules{ font-size:14px; line-height:1.5; padding-left:18px; margin-bottom:12px; }
 .rules li{ margin-bottom:4px; }
-@media (prefers-reduced-motion: reduce){ .cell, .pad button, .progress div{ transition:none; } .cell.flash, .cell.win, .cell.placed{ animation:none; } }
+@media (prefers-reduced-motion: reduce){ .cell, .pad button, .progress div{ transition:none; } .cell.flash, .cell.win, .cell.placed, .cell.shake{ animation:none; } }
 </style>
 </head>
 <body>
@@ -196,8 +201,9 @@ table.hs td.d{ text-align:right; color:var(--muted); font-size:12px; }
 /* =========================================================
    Sudoku: every row, column and 3x3 box holds 1-9 once.
    Each puzzle is made here and has exactly one solution.
-   No checking while playing: when the board is full the game says
-   whether it is right, not where it is wrong.
+   Only clear mistakes are shown while playing (a number repeated in its
+   row, column or box turns red); when the board is full the game says
+   whether it is right, not where a legal but wrong number is.
    No difficulty to choose: play starts at level 1 (easy) and each solved
    puzzle moves up one level, with one number fewer given, down to
    MIN_GIVENS (as few as a unique solution allows).
@@ -385,10 +391,24 @@ function after(){
     if(i >= 0) celebrate(i);
 }
 
-/* the square just filled pops in; a row, column or box it completes flashes */
+/* squares whose number is repeated in their row, column or box (clear
+   mistakes only: a legal but wrong number is not shown) */
+function clashes(){
+    const bad = new Set();
+    for(let i = 0; i < 81; i++){
+        const v = S.v[i];
+        if(v) for(const j of PEERS[i]) if(S.v[j] === v){ bad.add(i); break; }
+    }
+    return bad;
+}
+
+/* the square just filled pops in (or shakes when it clashes); a row, column
+   or box it completes without a clash flashes */
 let justFilled = -1;
 function celebrate(i){
     const pop = (c, cls) => { c.classList.remove(cls); void c.offsetWidth; c.classList.add(cls); setTimeout(() => c.classList.remove(cls), 750); };
+    const bad = clashes();
+    if(bad.has(i)) return pop(cells[i], 'shake');
     pop(cells[i], 'placed');
     const units = [[], [], []];
     for(let j = 0; j < 81; j++){
@@ -396,7 +416,7 @@ function celebrate(i){
         if(COL(j) === COL(i)) units[1].push(j);
         if(BOX(j) === BOX(i)) units[2].push(j);
     }
-    for(const u of units) if(u.every(j => S.v[j])) u.forEach((j, k) => setTimeout(() => pop(cells[j], 'flash'), k * 25));
+    for(const u of units) if(u.every(j => S.v[j] && !bad.has(j))) u.forEach((j, k) => setTimeout(() => pop(cells[j], 'flash'), k * 25));
 }
 
 function win(){
@@ -475,6 +495,7 @@ for(let d = 1; d <= 9; d++){
 
 function render(){
     const sv = sel >= 0 ? S.v[sel] : 0;
+    const bad = clashes();
     const count = new Array(10).fill(0);
     for(let i = 0; i < 81; i++){
         const c = cells[i], v = S.v[i];
@@ -486,8 +507,9 @@ function render(){
         if(i === sel) cls += ' sel';
         else if(sv && v === sv) cls += ' same';
         else if(sel >= 0 && (ROW(i) === ROW(sel) || COL(i) === COL(sel) || BOX(i) === BOX(sel))) cls += ' peer';
-        const anim = (c.className.match(/ (win|flash|placed)/g) || []).join('');
-        if(c.className.replace(/ (win|flash|placed)/g, '') !== cls){ c.className = cls + anim; if(!anim) c.style.animationDelay = ''; }
+        if(bad.has(i)) cls += ' bad';
+        const anim = (c.className.match(/ (win|flash|placed|shake)/g) || []).join('');
+        if(c.className.replace(/ (win|flash|placed|shake)/g, '') !== cls){ c.className = cls + anim; if(!anim) c.style.animationDelay = ''; }
         const key = v ? 'v' + v : S.notes[i] ? 'n' + S.notes[i] + '/' + sv : '';
         if(c.dataset.k === key) continue;
         c.dataset.k = key;
@@ -557,7 +579,7 @@ function showHelp(){
         + '<li>Điền số 1–9 vào các ô trống sao cho <b>mỗi hàng, mỗi cột và mỗi ô 3×3</b> có đủ 1–9, không lặp.</li>'
         + '<li>Chạm vào ô rồi chạm số bên dưới. Chạm lại cùng số để xóa. Trên máy tính: gõ số, mũi tên để di chuyển, Delete để xóa.</li>'
         + '<li><b>Ghi chú</b> (phím N): ghi các số có thể vào ô. Đặt một số sẽ tự xóa ghi chú số đó ở hàng, cột, ô 3×3.</li>'
-        + '<li>Trò chơi không báo số sai khi đang chơi; khi điền đầy bảng sẽ biết đúng hay chưa.</li>'
+        + '<li>Hai số giống nhau trong cùng hàng, cột hoặc ô 3×3 sẽ hiện <b>màu đỏ</b>. Số sai mà không trùng thì không báo; điền đầy bảng sẽ biết đúng hay chưa.</li>'
         + '<li>Số nhỏ dưới mỗi nút là số lượng còn phải điền. Mỗi câu đố chỉ có một lời giải.</li>'
         + '<li>Bắt đầu ở cấp 1 (dễ). Mỗi câu giải xong lên một cấp, khó hơn một chút.</li>'
         + '<li>Ván đang chơi tự lưu trên máy này.</li>'

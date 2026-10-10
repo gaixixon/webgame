@@ -25,7 +25,7 @@ Everything is kept in the browser only (`localStorage`): the game in progress (r
 - Fill 1–9 so that every row, column and 3×3 box holds each digit once. Every puzzle is generated in the browser and has exactly one solution.
 - No difficulty to pick: you start at level 1 (42 numbers given) and each solved puzzle moves you up a level with one number fewer, down to 24 (level 19 on).
 - Pencil notes (placing a number clears it from the notes around it), highlights of the row, column, box and same numbers, undo, erase, hint, restart, a different puzzle at the same level.
-- No checking while you play: when the board is full the game says whether it is right, not where it is wrong.
+- Only clear mistakes are shown: a number repeated in its row, column or 3×3 box turns red (both squares). A legal but wrong number is not shown; when the board is full the game says whether it is right.
 - Keyboard: digits, arrows, Delete, N for notes, Ctrl+Z.
 - The game in progress and your progress (level, puzzles solved, highest level) are kept in `localStorage`.
 
