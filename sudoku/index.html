@@ -110,8 +110,8 @@ body{ background:var(--page); color:var(--text);
 
 /* number pad: round buttons that press down; a number all placed gets a ✓ */
 .pad{ display:grid; grid-template-columns:repeat(9,1fr); gap:5px; margin-top:14px; }
-/* number pad: big flat blue digits; a number all placed fades, with a ✓ */
-.pad button{ padding:4px 0 2px; border:0; border-radius:8px; background:transparent; box-shadow:none; font-size:34px; font-weight:300; line-height:1.05;
+/* number pad: big plain dark grey digits; a number all placed fades, with a ✓ */
+.pad button{ padding:2px 0 2px; border:0; border-radius:8px; background:transparent; box-shadow:none; font-size:min(11vw, 44px); font-weight:400; line-height:1;
              color:var(--pad-text); display:flex; flex-direction:column; align-items:center; transition:transform .06s, background-color .1s; }
 .pad button:hover{ background:var(--btn-hover); }
 .pad button:active:not(:disabled){ transform:scale(.92); background:var(--peer); }
