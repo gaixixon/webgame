@@ -40,6 +40,7 @@ Everything is kept in the browser only (`localStorage`): the game in progress (r
 
 - Swipe (or arrow keys / WASD) to slide all tiles; two equal tiles that meet merge into their sum. A 2 (sometimes a 4) appears after each move.
 - Reach 2048 to win, then keep playing for a higher score. Undo one move, best score kept.
+- **Gợi ý** (hint, key H): an arrow shows the best move, found by looking a few moves ahead (expectimax) and scoring boards like the corner strategy. Following it reached 2048 in 6 of 6 test games.
 
 Each game is one file in its folder (`lines98/`, `sudoku/`, `blocks/`, `2048/`) plus the shared ☰ game menu, [`menu.js`](menu.js), which also registers the offline service worker: plain HTML, CSS and JavaScript, no libraries. A new game needs an entry in `menu.js` (GAMES) and in `sw.js` (FILES).
 

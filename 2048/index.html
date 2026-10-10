@@ -65,6 +65,12 @@ body{ background:var(--bg); color:var(--text); font-family:system-ui,-apple-syst
 @keyframes appear{ from{ transform:scale(0); } to{ transform:scale(1); } }
 @keyframes pop{ 0%{ transform:scale(1); } 50%{ transform:scale(1.18); } 100%{ transform:scale(1); } }
 
+/* the hint: a big arrow over the board */
+.arrow{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center; pointer-events:none; z-index:5; opacity:0; }
+.arrow svg{ width:42%; height:42%; filter:drop-shadow(0 4px 10px rgba(0,0,0,.45)); }
+.arrow.show{ animation:hint 1.6s ease-in-out forwards; }
+@keyframes hint{ 0%{ opacity:0; transform:scale(.8); } 15%{ opacity:.92; transform:scale(1); } 75%{ opacity:.92; } 100%{ opacity:0; } }
+
 .bar{ display:flex; flex-wrap:wrap; gap:8px; margin-top:12px; }
 .bar button{ flex:1 1 auto; }
 button{ font:inherit; font-size:14px; color:var(--text); background:var(--btn); border:1px solid var(--line); border-radius:8px;
@@ -102,6 +108,7 @@ button.icon{ flex:0 0 auto; width:42px; padding:9px 0; }
     <div class="board" id="board" aria-label="Bàn 4×4. Vuốt hoặc dùng phím mũi tên.">
         <div class="slots" id="slots"></div>
         <div class="tiles" id="tiles"></div>
+        <div class="arrow" id="arrow" aria-hidden="true"></div>
     </div>
 
     <div id="msg"></div>
@@ -109,6 +116,7 @@ button.icon{ flex:0 0 auto; width:42px; padding:9px 0; }
     <div class="bar">
         <button id="newBtn">Ván mới</button>
         <button id="undoBtn" disabled title="Đi lại nước vừa rồi (1 lần)">↶ Đi lại</button>
+        <button id="hintBtn" title="Gợi ý nước đi tốt nhất (phím H)"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-2px"><path d="M9 18h6M10 22h4"/><path d="M12 2a7 7 0 0 0-4 12.7V17h8v-2.3A7 7 0 0 0 12 2z"/></svg> Gợi ý</button>
         <button id="helpBtn" class="icon" title="Luật chơi" aria-label="Luật chơi">?</button>
     </div>
 </div>
@@ -200,6 +208,7 @@ function move(d){
     const r = slide(d);
     if(!r) return;
     busy = true;
+    $('arrow').classList.remove('show');
     undo = {state: JSON.parse(JSON.stringify(S)), ids: ids.slice()};
     S.cells = r.cells; S.score += r.gained; ids = r.nid;
     const placed = addRandom();
@@ -224,6 +233,112 @@ function canMove(){
         if(y < N - 1 && S.cells[i] === S.cells[i + N]) return true;
     }
     return false;
+}
+
+/* ---------- hint: the best move by expectimax ----------
+   Looks a few moves ahead: every direction, then every square a new 2 (90 %)
+   or 4 (10 %) may appear on, weighted by its chance, and scores the boards it
+   reaches like the corner strategy: empty squares, rows and columns in order
+   (big to small), tiles next to equal ones, few big tiles scattered.
+   Rows are 4 tile exponents packed in 16 bits; their moves and scores come
+   from tables made once. */
+let AI = null;
+function aiTables(){
+    const LEFT = new Uint16Array(65536), HEUR = new Float64Array(65536);
+    for(let row = 0; row < 65536; row++){
+        const l = [row & 15, (row >> 4) & 15, (row >> 8) & 15, (row >> 12) & 15];
+        // slide left, merging equal neighbours once
+        const out = l.filter(x => x);
+        for(let i = 0; i < out.length - 1; i++) if(out[i] === out[i + 1]){ out[i] = Math.min(out[i] + 1, 15); out.splice(i + 1, 1); }
+        while(out.length < 4) out.push(0);
+        LEFT[row] = out[0] | (out[1] << 4) | (out[2] << 8) | (out[3] << 12);
+        // score of one row (or column)
+        let sum = 0, empty = 0, merges = 0, prev = 0, counter = 0;
+        for(const r of l){
+            sum += Math.pow(r, 3.5);
+            if(!r){ empty++; continue; }
+            if(prev === r) counter++;
+            else if(counter > 0){ merges += 1 + counter; counter = 0; }
+            prev = r;
+        }
+        if(counter > 0) merges += 1 + counter;
+        let left = 0, right = 0;
+        for(let i = 1; i < 4; i++){
+            if(l[i - 1] > l[i]) left += Math.pow(l[i - 1], 4) - Math.pow(l[i], 4);
+            else right += Math.pow(l[i], 4) - Math.pow(l[i - 1], 4);
+        }
+        HEUR[row] = 200000 + 270 * empty + 700 * merges - 47 * Math.min(left, right) - 11 * sum;
+    }
+    return {LEFT, HEUR};
+}
+/* line k of direction d, as cell indexes from the edge the tiles move to */
+const LINES = [0, 1, 2, 3].map(d => [0, 1, 2, 3].map(k => [0, 1, 2, 3].map(j =>
+    d === 0 ? j * N + k : d === 2 ? (N - 1 - j) * N + k : d === 3 ? k * N + j : k * N + (N - 1 - j))));
+function aiMove(b, d){
+    const out = b.slice();
+    let moved = false;
+    for(const idx of LINES[d]){
+        const row = b[idx[0]] | (b[idx[1]] << 4) | (b[idx[2]] << 8) | (b[idx[3]] << 12);
+        const res = AI.LEFT[row];
+        if(res !== row){ moved = true; for(let j = 0; j < 4; j++) out[idx[j]] = (res >> (4 * j)) & 15; }
+    }
+    return moved ? out : null;
+}
+function aiScore(b){
+    let s = 0;
+    for(let k = 0; k < 4; k++){
+        s += AI.HEUR[b[k * 4] | (b[k * 4 + 1] << 4) | (b[k * 4 + 2] << 8) | (b[k * 4 + 3] << 12)];
+        s += AI.HEUR[b[k] | (b[k + 4] << 4) | (b[k + 8] << 8) | (b[k + 12] << 12)];
+    }
+    return s;
+}
+function bestMove(cells){
+    if(!AI) AI = aiTables();
+    const b = cells.map(v => v ? Math.min(Math.round(Math.log2(v)), 15) : 0);
+    const empty = b.filter(x => !x).length;
+    const depth = empty > 7 ? 2 : empty > 4 ? 3 : 4;      // fewer empty squares: fewer branches, look further
+    const cache = new Map();
+    const maxNode = (bd, dep, p) => {
+        let best = 0;
+        for(let d = 0; d < 4; d++){ const m = aiMove(bd, d); if(m) best = Math.max(best, chance(m, dep, p)); }
+        return best;                                        // 0 = no move left: lost
+    };
+    const chance = (bd, dep, p) => {
+        if(dep <= 0 || p < 0.0001) return aiScore(bd);
+        const key = bd.join(',') + '/' + dep;
+        if(cache.has(key)) return cache.get(key);
+        const free = [];
+        for(let i = 0; i < 16; i++) if(!bd[i]) free.push(i);
+        let total = 0;
+        for(const i of free){
+            bd[i] = 1; total += 0.9 * maxNode(bd, dep - 1, p * 0.9 / free.length);
+            bd[i] = 2; total += 0.1 * maxNode(bd, dep - 1, p * 0.1 / free.length);
+            bd[i] = 0;
+        }
+        const v = free.length ? total / free.length : aiScore(bd);
+        cache.set(key, v);
+        return v;
+    };
+    let best = -1, bestV = -1;
+    for(let d = 0; d < 4; d++){
+        const m = aiMove(b, d);
+        if(!m) continue;
+        const v = chance(m, depth, 1);
+        if(v > bestV){ bestV = v; best = d; }
+    }
+    return best;
+}
+
+const ARROWS = ['M12 20V4M5 11l7-7 7 7', 'M4 12h16M13 5l7 7-7 7', 'M12 4v16M5 13l7 7 7-7', 'M20 12H4M11 5l-7 7 7 7'];
+const DIR_NAME = ['vuốt lên', 'vuốt sang phải', 'vuốt xuống', 'vuốt sang trái'];
+function hint(){
+    if(busy || S.over || !$('dlg').hidden) return;
+    const d = bestMove(S.cells);
+    if(d < 0) return say('Không còn nước đi nào.');
+    const a = $('arrow');
+    a.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="' + ARROWS[d] + '"/></svg>';
+    a.classList.remove('show'); void a.offsetWidth; a.classList.add('show');
+    say('Gợi ý: ' + DIR_NAME[d] + '.');
 }
 
 /* ---------- drawing ---------- */
@@ -301,6 +416,7 @@ document.addEventListener('keydown', e => {
     if(window.gameMenuOpen && gameMenuOpen()) return;
     if(!$('dlg').hidden){ if(e.key === 'Escape') closeDlg(); return; }
     if((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z'){ e.preventDefault(); return $('undoBtn').click(); }
+    if((e.key === 'h' || e.key === 'H') && !e.ctrlKey && !e.metaKey && !e.altKey) return hint();
     const d = {ArrowUp: 0, ArrowRight: 1, ArrowDown: 2, ArrowLeft: 3, w: 0, d: 1, s: 2, a: 3}[e.key];
     if(d !== undefined && !e.ctrlKey && !e.metaKey && !e.altKey){ e.preventDefault(); move(d); }
 });
@@ -309,6 +425,7 @@ $('newBtn').onclick = () => {
     if(S.over || S.score === 0) return newGame();
     confirmBox('Ván mới?', 'Ván đang chơi (' + S.score + ' điểm) sẽ bị bỏ.', 'Ván mới', newGame);
 };
+$('hintBtn').onclick = hint;
 $('undoBtn').onclick = () => {
     if(!undo || busy) return;
     S = undo.state; ids = undo.ids; undo = null;
@@ -320,6 +437,7 @@ $('helpBtn').onclick = () => openDlg('<h2>Luật chơi</h2><ul class="rules">'
     + '<li>Hai ô cùng số chạm nhau thì gộp thành một ô bằng tổng, và bạn được cộng số điểm đó.</li>'
     + '<li>Sau mỗi lượt có một ô 2 (đôi khi 4) mới xuất hiện.</li>'
     + '<li>Tạo được ô <b>2048</b> là thắng; có thể chơi tiếp để lấy điểm cao hơn. Hết đường đi là hết ván.</li>'
+    + '<li><b>Gợi ý</b> (phím H) chỉ hướng vuốt tốt nhất, theo cách giữ ô lớn nhất ở góc. Không giới hạn, không ảnh hưởng điểm.</li>'
     + '<li>Mỗi lượt có thể đi lại 1 lần. Ván đang chơi tự lưu trên máy này.</li>'
     + '</ul><div class="acts"><button class="pri" id="dClose">Đã hiểu</button></div>', () => { $('dClose').onclick = closeDlg; });
 
