@@ -44,7 +44,7 @@ Everything is kept in the browser only (`localStorage`): the game in progress (r
 - Enemies: basic (100), fast (200), fast-shooting (300) and armoured (400, 4 hits). Later stages bring more of the tough ones and they shoot more often.
 - The 4th, 11th and 18th enemy flash red: hit one and a bonus appears — helmet (shield), shovel (steel around the base), clock (enemies freeze), grenade (all enemies explode), tank (extra life).
 - **Thành đá** (emergency, once per stage): the brick ring round the base turns to stone for 20 seconds; nothing breaks it, not even your own shots.
-- Phone: direction pad, **Thành đá** and **Bắn** (fire) buttons under the field; tap the field to pause. Computer: arrows or WASD, Space to fire, B for Thành đá, P to pause.
+- Phone: four arrow buttons (up, down, left, right) in a cross, **Thành đá**, and **Bắn** (fire), a switch: tap once to fire non-stop, again to stop; tap the field to pause. Computer: arrows or WASD, Space to fire, B for Thành đá, P to pause.
 - The game is kept at the start of the stage reached, plus the best score and the sound setting (`localStorage`).
 
 Each game is one file in its folder (`lines98/`, `sudoku/`, `blocks/`, `tank/`) plus the shared ☰ game menu, [`menu.js`](menu.js), which also registers the offline service worker: plain HTML, CSS and JavaScript, no libraries. A new game needs an entry in `menu.js` (GAMES) and in `sw.js` (FILES).

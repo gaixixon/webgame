@@ -51,10 +51,12 @@ body{ background:var(--bg); color:var(--text); font-family:system-ui,-apple-syst
       touch-action:none; user-select:none; -webkit-user-select:none; -webkit-touch-callout:none; }
 body.touch .pad{ display:flex; }
 @media (hover:none) and (pointer:coarse){ .pad{ display:flex; } }
-.stick{ width:136px; height:136px; border-radius:50%; background:var(--panel); border:1px solid var(--line); box-shadow:var(--shadow); touch-action:none; }
-.stick svg{ display:block; width:100%; height:100%; }
-.stick path{ fill:var(--muted); opacity:.55; }
-.stick[data-dir="0"] .a0, .stick[data-dir="1"] .a1, .stick[data-dir="2"] .a2, .stick[data-dir="3"] .a3{ fill:var(--accent); opacity:1; }
+.dpad{ display:grid; grid-template-columns:repeat(3,54px); grid-template-rows:repeat(3,54px); gap:2px; touch-action:none; }
+.dpad div{ display:flex; align-items:center; justify-content:center; background:var(--btn); border:1px solid var(--line); border-radius:10px;
+           box-shadow:0 3px 0 rgba(0,0,0,.18), var(--shadow); color:var(--text); }
+.dpad div svg{ width:26px; height:26px; fill:currentColor; }
+.dpad .u{ grid-area:1/2; } .dpad .r{ grid-area:2/3; } .dpad .d{ grid-area:3/2; } .dpad .l{ grid-area:2/1; }
+.dpad .on{ background:var(--accent); border-color:var(--accent); color:#fff; transform:translateY(2px); box-shadow:0 1px 0 rgba(0,0,0,.18); }
 .fire{ width:100px; height:100px; border-radius:50%; background:var(--danger); color:#fff; border:0; font-size:17px; font-weight:700;
        box-shadow:0 4px 0 rgba(0,0,0,.3), var(--shadow); touch-action:none; }
 .fire:hover{ background:var(--danger); }
@@ -68,7 +70,13 @@ body.touch .pad{ display:flex; }
 /* the bottom bar's emergency button is for computers; phones have the round one in the pad */
 body.touch .stonebar{ display:none; }
 @media (hover:none) and (pointer:coarse){ .stonebar{ display:none; } }
-.fire.on{ transform:translateY(3px); box-shadow:0 1px 0 rgba(0,0,0,.3); }
+.fire.on{ transform:translateY(3px); box-shadow:0 0 0 4px var(--bg), 0 0 0 7px var(--danger); font-size:15px; animation:firing .5s ease-in-out infinite alternate; }
+@keyframes firing{ to{ filter:brightness(1.25); } }
+@media (prefers-reduced-motion: reduce){ .fire.on{ animation:none; } }
+@media (max-width:380px){
+    .dpad{ grid-template-columns:repeat(3,48px); grid-template-rows:repeat(3,48px); }
+    .fire{ width:86px; height:86px; } .stone{ width:64px; height:64px; font-size:12px; }
+}
 
 .bar{ display:flex; flex-wrap:wrap; gap:8px; margin-top:12px; }
 .bar button{ flex:1 1 auto; }
@@ -87,8 +95,8 @@ button.icon{ flex:0 0 auto; width:42px; padding:9px 0; }
     .stat{ padding:5px 6px; }
     .stat .k{ font-size:10px; letter-spacing:0; }
     .stat .v{ font-size:17px; }
-    .field{ width:min(calc(100vw - 4px - env(safe-area-inset-left) - env(safe-area-inset-right)), calc(100vh - 300px));
-            width:min(calc(100vw - 4px - env(safe-area-inset-left) - env(safe-area-inset-right)), calc(100svh - 300px));
+    .field{ width:min(calc(100vw - 4px - env(safe-area-inset-left) - env(safe-area-inset-right)), calc(100vh - 330px));
+            width:min(calc(100vw - 4px - env(safe-area-inset-left) - env(safe-area-inset-right)), calc(100svh - 330px));
             position:relative; left:50%; transform:translateX(-50%); border-radius:0; }
 }
 
@@ -117,14 +125,14 @@ button.icon{ flex:0 0 auto; width:42px; padding:9px 0; }
     <canvas class="field" id="field" aria-label="Chiến trường. Máy tính: phím mũi tên hoặc W A S D để đi, phím cách để bắn, P tạm dừng. Điện thoại: bàn phím hướng và nút Bắn bên dưới."></canvas>
 
     <div class="pad" id="pad">
-        <div class="stick" id="stick" data-dir="" aria-label="Hướng đi">
-            <svg viewBox="0 0 100 100" aria-hidden="true">
-                <path class="a0" d="M50 9l13 17H37z"/><path class="a1" d="M91 50L74 63V37z"/>
-                <path class="a2" d="M50 91L37 74h26z"/><path class="a3" d="M9 50l17-13v26z"/>
-            </svg>
+        <div class="dpad" id="dpad" aria-label="Hướng đi">
+            <div class="u" aria-label="Lên"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5l8 11H4z"/></svg></div>
+            <div class="l" aria-label="Trái"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12l11-8v16z"/></svg></div>
+            <div class="r" aria-label="Phải"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12L8 20V4z"/></svg></div>
+            <div class="d" aria-label="Xuống"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19L4 8h16z"/></svg></div>
         </div>
         <button class="stone" id="stone" type="button" title="Khẩn cấp: biến tường quanh căn cứ thành đá 20 giây (1 lần mỗi màn)">Thành<br>đá<small>1</small></button>
-        <button class="fire" id="fire" type="button">Bắn</button>
+        <button class="fire" id="fire" type="button" aria-pressed="false" title="Bật / tắt bắn liên tục">Bắn</button>
     </div>
 
     <div id="msg"></div>
@@ -440,6 +448,7 @@ function hitPlayer(p){
     boom(p.x + 8, p.y + 8, true);
     G.player = null;
     S.lives--;
+    setFire(false);
     beep('die'); hud();
     if(S.lives <= 0) lose(); else G.respawnT = 1.2;
 }
@@ -490,7 +499,7 @@ function takeBonus(){
 }
 
 /* ---------- one step of the game ---------- */
-let padDir = -1, held = [], fireKey = false, firePad = false, fireQueued = false;
+let padDir = -1, held = [], fireKey = false, fireOn = false, fireQueued = false;
 function step(dt){
     G.time += dt;
     G.booms.forEach(b => { b.t += dt; }); G.booms = G.booms.filter(b => b.t < b.dur);
@@ -523,7 +532,7 @@ function step(dt){
             const d = padDir >= 0 ? padDir : held.length ? held[held.length - 1] : -1;
             if(d >= 0) tryMove(p, d, PLAYER_SPEED * dt);
             p.cool -= dt;
-            if((fireKey || firePad || fireQueued) && p.cool <= 0 && fire(p)) p.cool = 0.12;
+            if((fireKey || fireOn || fireQueued) && p.cool <= 0 && fire(p)) p.cool = 0.12;
             if(G.bonus && Math.abs(G.bonus.x - p.x) < 12 && Math.abs(G.bonus.y - p.y) < 12) takeBonus();
         }
     }else if(S.lives > 0){
@@ -745,7 +754,7 @@ function start(){
     unlockAudio();
     mode = 'play'; setPause(); beep('start'); say(isTouch() ? '' : 'Mũi tên / W A S D: đi · Phím cách: bắn · B: thành đá · P: tạm dừng');
 }
-function pause(){ if(mode !== 'play') return; mode = 'pause'; held = []; fireKey = firePad = false; padDir = -1; setPause(); }
+function pause(){ if(mode !== 'play') return; mode = 'pause'; held = []; fireKey = false; setFire(false); padDir = -1; setPause(); }
 function resume(){ if(mode !== 'pause') return; unlockAudio(); mode = 'play'; setPause(); }
 function setPause(){
     const b = $('pauseBtn');
@@ -759,12 +768,13 @@ function wake(){ unlockAudio(); if(mode === 'ready') start(); else if(mode === '
 function newGame(){
     closeDlg();
     S = {stage: 1, score: 0, lives: LIVES};
+    setFire(false);
     startStage();
     mode = 'ready'; setPause();
     start();
 }
 function gameOver(){
-    mode = 'over'; setPause();
+    mode = 'over'; setPause(); setFire(false);
     const b = best(), rec = S.score > b;
     if(rec) store.set(KEY.best, S.score);
     store.set(KEY.game, null);
@@ -807,37 +817,49 @@ cv.addEventListener('pointerdown', e => {
     if(mode === 'play') pause(); else wake();
 });
 
-/* the direction pad: the finger's side of the centre picks the direction, sliding changes it */
-const stick = $('stick');
-let stickId = null;
-function stickAt(e){
-    const r = stick.getBoundingClientRect(), dx = e.clientX - (r.left + r.width / 2), dy = e.clientY - (r.top + r.height / 2);
-    padDir = Math.hypot(dx, dy) < r.width * 0.1 ? -1 : Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 1 : 3) : (dy > 0 ? 2 : 0);
-    stick.dataset.dir = padDir < 0 ? '' : padDir;
+/* the direction pad: four arrow buttons in a cross. The finger may slide from one to another;
+   the empty centre and corners leave the direction as it was (centre: stop). */
+const dpad = $('dpad'), ARROWS = [dpad.querySelector('.u'), dpad.querySelector('.r'), dpad.querySelector('.d'), dpad.querySelector('.l')];
+let padId = null;
+function setPadDir(d){
+    padDir = d;
+    ARROWS.forEach((a, k) => a.classList.toggle('on', k === d));
 }
-stick.addEventListener('pointerdown', e => {
+function padAt(e){
+    const r = dpad.getBoundingClientRect();
+    const col = Math.max(0, Math.min(2, Math.floor((e.clientX - r.left) / r.width * 3)));
+    const row = Math.max(0, Math.min(2, Math.floor((e.clientY - r.top) / r.height * 3)));
+    const d = row === 0 && col === 1 ? 0 : row === 1 && col === 2 ? 1 : row === 2 && col === 1 ? 2 : row === 1 && col === 0 ? 3 : row === 1 && col === 1 ? -1 : padDir;
+    if(d !== padDir) setPadDir(d);
+}
+dpad.addEventListener('pointerdown', e => {
     e.preventDefault(); touched(e);
     if(mode === 'over') return;
-    stickId = e.pointerId;
-    try{ stick.setPointerCapture(e.pointerId); }catch(err){}
-    wake(); stickAt(e);
+    padId = e.pointerId;
+    try{ dpad.setPointerCapture(e.pointerId); }catch(err){}
+    wake(); padAt(e);
 });
-stick.addEventListener('pointermove', e => { if(e.pointerId === stickId) stickAt(e); });
-const stickUp = e => { if(e.pointerId !== stickId) return; stickId = null; padDir = -1; stick.dataset.dir = ''; };
-stick.addEventListener('pointerup', stickUp);
-stick.addEventListener('pointercancel', stickUp);
+dpad.addEventListener('pointermove', e => { if(e.pointerId === padId) padAt(e); });
+const padUp = e => { if(e.pointerId !== padId) return; padId = null; setPadDir(-1); };
+dpad.addEventListener('pointerup', padUp);
+dpad.addEventListener('pointercancel', padUp);
 
+/* the fire button is a switch: tap to fire non-stop, tap again to stop */
 const fireBtn = $('fire');
+function setFire(on){
+    fireOn = on;
+    fireBtn.classList.toggle('on', on);
+    fireBtn.textContent = on ? 'Đang bắn' : 'Bắn';
+    fireBtn.setAttribute('aria-pressed', String(on));
+}
 fireBtn.addEventListener('pointerdown', e => {
     e.preventDefault(); touched(e);
     if(mode === 'over') return;
-    try{ fireBtn.setPointerCapture(e.pointerId); }catch(err){}
-    firePad = true; fireQueued = true; fireBtn.classList.add('on');
+    const was = mode;
     wake();
+    if(was === 'play' || !fireOn) setFire(!fireOn);
+    if(fireOn) fireQueued = true;
 });
-const fireUp = () => { firePad = false; fireBtn.classList.remove('on'); };
-fireBtn.addEventListener('pointerup', fireUp);
-fireBtn.addEventListener('pointercancel', fireUp);
 $('pad').addEventListener('contextmenu', e => e.preventDefault());
 $('stone').addEventListener('pointerdown', e => { e.preventDefault(); touched(e); wake(); emergency(); });
 $('stoneBtn').onclick = () => { $('stoneBtn').blur(); wake(); emergency(); };
@@ -851,7 +873,7 @@ $('pauseBtn').onclick = () => { if(mode === 'play') pause(); else resume(); };
 $('soundBtn').onclick = () => { soundOn = !soundOn; store.set(KEY.sound, soundOn); setSoundIcon(); unlockAudio(); beep('tap'); };
 $('helpBtn').onclick = () => { pause(); openDlg('<h2>Luật chơi</h2><ul class="rules">'
     + '<li>Lái xe tăng vàng bảo vệ căn cứ (ngôi sao ở giữa cạnh dưới) và tiêu diệt 20 xe địch để qua màn.</li>'
-    + '<li>Điện thoại: bàn phím hướng bên trái, nút <b>Bắn</b> bên phải (giữ để bắn liên tục); chạm vào chiến trường để tạm dừng. '
+    + '<li>Điện thoại: 4 nút mũi tên (lên, xuống, trái, phải) bên trái; nút <b>Bắn</b> bên phải là công tắc: chạm một lần để bắn liên tục, chạm lần nữa để thôi. Chạm vào chiến trường để tạm dừng. '
     + 'Máy tính: phím mũi tên hoặc W A S D để đi, phím cách để bắn, B thành đá, P tạm dừng.</li>'
     + '<li>Xe của bạn luôn bắn mạnh: đạn nhanh, bắn 2 viên một lúc, mỗi phát phá cả một ô tường, kể cả tường thép. Xe địch chỉ phá được gạch.</li>'
     + '<li>Xe không đi qua nước nhưng đạn bay qua. Bụi cây che xe.</li>'
