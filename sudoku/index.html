@@ -117,6 +117,7 @@ body{ background:var(--page); color:var(--text);
              color:var(--pad-text); display:flex; flex-direction:column; align-items:center; transition:transform .06s, background-color .1s; }
 @media (hover:hover){ .pad button:hover{ background:var(--btn-hover); } }
 .pad button:active:not(:disabled){ transform:scale(.92); background:var(--sel); }
+.pad button.on, .pad button.on:hover{ background:var(--sel); }  /* the number in the selected square */
 .pad button small{ font-size:11px; font-weight:600; color:var(--muted); }
 .pad button.used{ opacity:.25; }
 .tools{ display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-top:10px; }
@@ -543,6 +544,7 @@ function render(){
         const left = Math.max(0, 9 - count[k + 1]);
         b.querySelector('small').textContent = left ? left : '✓';
         b.classList.toggle('used', !left);
+        b.classList.toggle('on', sv === k + 1);
         b.disabled = S.done;
     });
     $('level').textContent = S.level;
