@@ -3,11 +3,11 @@
    screen). Pages are served from that copy straight away and refreshed from
    the network in the background, so a new version shows on the next visit.
    Add a new file or game to FILES. */
-const CACHE = 'webgame-v1';
+const CACHE = 'webgame-v2';
 const FILES = [
     './', 'index.html', 'menu.js', 'manifest.webmanifest',
     'icons/icon.svg', 'icons/icon-180.png', 'icons/icon-192.png', 'icons/icon-512.png',
-    'lines98/', 'sudoku/', 'blocks/', '2048/'
+    'lines98/', 'sudoku/', 'blocks/', '2048/', 'brick/'
 ];
 
 self.addEventListener('install', e => {

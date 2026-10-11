@@ -43,7 +43,15 @@ Everything is kept in the browser only (`localStorage`): the game in progress (r
 - Reach 2048 to win, then keep playing for a higher score. Undo one move, best score kept.
 - **Gợi ý** (hint, key H): an arrow shows the best move, found by looking a few moves ahead (expectimax) and scoring boards like the corner strategy. Following it reached 2048 in 6 of 6 test games.
 
-Each game is one file in its folder (`lines98/`, `sudoku/`, `blocks/`, `2048/`) plus the shared ☰ game menu, [`menu.js`](menu.js), which also registers the offline service worker: plain HTML, CSS and JavaScript, no libraries. A new game needs an entry in `menu.js` (GAMES) and in `sw.js` (FILES).
+## Phá gạch (brick breaker)
+
+- Move the paddle and bounce the ball to break every brick. Where the ball hits the paddle sets its angle (steeper near the edges).
+- On a phone, drag anywhere on the field (the paddle follows your finger's movement, so your finger doesn't hide it) and tap to launch. On a computer, use the mouse or ←/→, Space to launch or pause, and P to pause.
+- 3 lives. Each level adds rows and speeds up the ball. Bricks with a dark frame take 2–3 hits, and from level 7 grey steel bricks never break. 10 points per hit, plus 100 × the level for clearing it.
+- About 1 in 8 broken bricks drops a power-up: **W** wider paddle (15 s), **3** three balls, **S** slow ball (10 s), **+** extra life.
+- The game pauses when the tab is hidden or the menu opens. The game in progress (bricks, score, lives; saved at the start of each ball, without power-ups), the best score and the sound setting are kept in `localStorage`.
+
+Each game is one file in its folder (`lines98/`, `sudoku/`, `blocks/`, `2048/`, `brick/`) plus the shared ☰ game menu, [`menu.js`](menu.js), which also registers the offline service worker: plain HTML, CSS and JavaScript, no libraries. A new game needs an entry in `menu.js` (GAMES) and in `sw.js` (FILES).
 
 ## Run locally
 
