@@ -115,8 +115,8 @@ body{ background:var(--page); color:var(--text);
 /* number pad: big plain dark grey digits; a number all placed fades, with a ✓ */
 .pad button{ padding:2px 0 2px; border:0; border-radius:8px; background:transparent; box-shadow:none; font-size:min(11vw, 44px); font-weight:400; line-height:1;
              color:var(--pad-text); display:flex; flex-direction:column; align-items:center; transition:transform .06s, background-color .1s; }
-.pad button:hover{ background:var(--btn-hover); }
-.pad button:active:not(:disabled){ transform:scale(.92); background:var(--peer); }
+@media (hover:hover){ .pad button:hover{ background:var(--btn-hover); } }
+.pad button:active:not(:disabled){ transform:scale(.92); background:var(--sel); }
 .pad button small{ font-size:11px; font-weight:600; color:var(--muted); }
 .pad button.used{ opacity:.25; }
 .tools{ display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-top:10px; }
