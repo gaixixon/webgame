@@ -9,7 +9,8 @@
     const GAMES = [
         {id: 'lines98', name: 'Lines 98', desc: 'Xếp 5 bi cùng màu thành hàng'},
         {id: 'sudoku', name: 'Sudoku', desc: 'Điền số 1–9, mỗi hàng, cột, ô 3×3 một lần'},
-        {id: 'blocks', name: 'Xếp khối', desc: 'Đặt khối, lấp đầy hàng, cột, ô 3×3'}
+        {id: 'blocks', name: 'Xếp khối', desc: 'Đặt khối, lấp đầy hàng, cột, ô 3×3'},
+        {id: 'tank', name: 'Tank 1990', desc: 'Bảo vệ căn cứ, diệt 20 xe tăng địch'}
     ];
     const me = document.currentScript;
     const base = new URL('./', me.src);                    // the site root (where menu.js is)

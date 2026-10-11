@@ -1,0 +1,925 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="description" content="Tank 1990: lái xe tăng bảo vệ căn cứ, tiêu diệt 20 xe địch mỗi màn.">
+<title>Tank 1990</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='2' y='2' width='28' height='28' rx='5' fill='%2314161a'/%3E%3Crect x='7' y='8' width='5' height='18' rx='1' fill='%23806a1c'/%3E%3Crect x='20' y='8' width='5' height='18' rx='1' fill='%23806a1c'/%3E%3Crect x='11' y='11' width='10' height='13' rx='2' fill='%23f2c43d'/%3E%3Ccircle cx='16' cy='18' r='3.5' fill='%23b8901f'/%3E%3Crect x='15' y='4' width='2' height='12' fill='%23f2c43d'/%3E%3C/svg%3E">
+<link rel="manifest" href="../manifest.webmanifest">
+<link rel="apple-touch-icon" href="../icons/icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Games">
+<meta name="theme-color" content="#e9e7e1" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#14161a" media="(prefers-color-scheme: dark)">
+<style>
+:root{
+    --bg:#e9e7e1; --panel:#f7f6f2; --text:#222; --muted:#666; --line:#c9c6bd;
+    --btn:#fff; --btn-hover:#f0eee8; --accent:#1f6feb; --danger:#d93636;
+    --shadow:0 2px 10px rgba(0,0,0,.12);
+}
+@media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+        --bg:#14161a; --panel:#1d2026; --text:#eee; --muted:#9aa0a8; --line:#333842;
+        --btn:#262a31; --btn-hover:#2f343c; --accent:#58a6ff; --danger:#e5484d;
+        --shadow:0 2px 10px rgba(0,0,0,.5);
+    }
+}
+:root[data-theme="dark"]{
+    --bg:#14161a; --panel:#1d2026; --text:#eee; --muted:#9aa0a8; --line:#333842;
+    --btn:#262a31; --btn-hover:#2f343c; --accent:#58a6ff; --danger:#e5484d;
+    --shadow:0 2px 10px rgba(0,0,0,.5);
+}
+*{ box-sizing:border-box; margin:0; padding:0; }
+html{ -webkit-text-size-adjust:100%; }
+body{ background:var(--bg); color:var(--text); font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+      padding:12px 16px 24px; min-height:100vh; -webkit-tap-highlight-color:transparent; overscroll-behavior:none; }
+.wrap{ width:100%; max-width:480px; margin:0 auto; }
+
+.top{ display:grid; grid-template-columns:repeat(5,1fr); gap:8px; margin-bottom:10px; }
+.stat{ background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:6px 10px; box-shadow:var(--shadow); min-width:0; }
+.stat .k{ font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; white-space:nowrap; }
+.stat .v{ font-size:20px; font-weight:700; font-variant-numeric:tabular-nums; line-height:1.2; overflow:hidden; text-overflow:ellipsis; }
+
+/* the battlefield: square, as large as the screen allows; always dark, like the arcade */
+.field{ display:block; width:min(100%, calc(100vh - 250px)); width:min(100%, calc(100svh - 250px)); min-width:240px; aspect-ratio:1; margin:0 auto;
+        background:#050608; border-radius:6px; touch-action:none; user-select:none; -webkit-user-select:none; }
+
+/* touch controls: a direction pad on the left, the fire button on the right */
+.pad{ display:none; align-items:center; justify-content:space-between; margin-top:10px; padding:0 4px;
+      touch-action:none; user-select:none; -webkit-user-select:none; -webkit-touch-callout:none; }
+body.touch .pad{ display:flex; }
+@media (hover:none) and (pointer:coarse){ .pad{ display:flex; } }
+.stick{ width:136px; height:136px; border-radius:50%; background:var(--panel); border:1px solid var(--line); box-shadow:var(--shadow); touch-action:none; }
+.stick svg{ display:block; width:100%; height:100%; }
+.stick path{ fill:var(--muted); opacity:.55; }
+.stick[data-dir="0"] .a0, .stick[data-dir="1"] .a1, .stick[data-dir="2"] .a2, .stick[data-dir="3"] .a3{ fill:var(--accent); opacity:1; }
+.fire{ width:100px; height:100px; border-radius:50%; background:var(--danger); color:#fff; border:0; font-size:17px; font-weight:700;
+       box-shadow:0 4px 0 rgba(0,0,0,.3), var(--shadow); touch-action:none; }
+.fire:hover{ background:var(--danger); }
+.fire.on{ transform:translateY(3px); box-shadow:0 1px 0 rgba(0,0,0,.3); }
+
+.bar{ display:flex; flex-wrap:wrap; gap:8px; margin-top:12px; }
+.bar button{ flex:1 1 auto; }
+button{ font:inherit; font-size:14px; color:var(--text); background:var(--btn); border:1px solid var(--line); border-radius:8px;
+        padding:9px 12px; cursor:pointer; box-shadow:var(--shadow); white-space:nowrap; }
+button:hover{ background:var(--btn-hover); }
+button:disabled{ opacity:.45; cursor:default; }
+button.icon{ flex:0 0 auto; width:42px; padding:9px 0; }
+.pad button{ -webkit-user-select:none; user-select:none; -webkit-touch-callout:none; }
+#msg{ min-height:20px; text-align:center; color:var(--muted); font-size:14px; margin-top:10px; }
+
+/* phones: the field almost edge to edge (2px each side, clear of the notch in landscape), room left for the pad */
+@media (max-width:520px){
+    body{ padding-left:max(16px, env(safe-area-inset-left)); padding-right:max(16px, env(safe-area-inset-right)); }
+    .top{ gap:5px; }
+    .stat{ padding:5px 6px; }
+    .stat .k{ font-size:10px; letter-spacing:0; }
+    .stat .v{ font-size:17px; }
+    .field{ width:min(calc(100vw - 4px - env(safe-area-inset-left) - env(safe-area-inset-right)), calc(100vh - 300px));
+            width:min(calc(100vw - 4px - env(safe-area-inset-left) - env(safe-area-inset-right)), calc(100svh - 300px));
+            position:relative; left:50%; transform:translateX(-50%); border-radius:0; }
+}
+
+.dlg{ position:fixed; inset:0; background:rgba(0,0,0,.5); display:flex; align-items:center; justify-content:center; padding:16px; z-index:10; }
+.dlg[hidden]{ display:none; }
+.box{ background:var(--panel); color:var(--text); border-radius:12px; padding:18px; width:100%; max-width:380px; max-height:calc(100vh - 32px); overflow:auto; box-shadow:0 10px 40px rgba(0,0,0,.4); }
+.box h2{ font-size:18px; margin-bottom:10px; }
+.box p{ color:var(--muted); font-size:14px; line-height:1.45; margin-bottom:10px; }
+.box .acts{ display:flex; gap:8px; justify-content:flex-end; flex-wrap:wrap; }
+.box button.pri{ background:var(--accent); color:#fff; border-color:var(--accent); }
+.rules{ font-size:14px; line-height:1.5; padding-left:18px; margin-bottom:12px; }
+.rules li{ margin-bottom:4px; }
+</style>
+</head>
+<body>
+<script src="../menu.js" data-game="tank"></script>
+<div class="wrap">
+    <div class="top">
+        <div class="stat"><div class="k">Điểm</div><div class="v" id="score">0</div></div>
+        <div class="stat"><div class="k">Màn</div><div class="v" id="stage">1</div></div>
+        <div class="stat"><div class="k">Mạng</div><div class="v" id="lives">3</div></div>
+        <div class="stat"><div class="k">Địch</div><div class="v" id="foes">20</div></div>
+        <div class="stat"><div class="k">Kỷ lục</div><div class="v" id="best">0</div></div>
+    </div>
+
+    <canvas class="field" id="field" aria-label="Chiến trường. Máy tính: phím mũi tên hoặc W A S D để đi, phím cách để bắn, P tạm dừng. Điện thoại: bàn phím hướng và nút Bắn bên dưới."></canvas>
+
+    <div class="pad" id="pad">
+        <div class="stick" id="stick" data-dir="" aria-label="Hướng đi">
+            <svg viewBox="0 0 100 100" aria-hidden="true">
+                <path class="a0" d="M50 9l13 17H37z"/><path class="a1" d="M91 50L74 63V37z"/>
+                <path class="a2" d="M50 91L37 74h26z"/><path class="a3" d="M9 50l17-13v26z"/>
+            </svg>
+        </div>
+        <button class="fire" id="fire" type="button">Bắn</button>
+    </div>
+
+    <div id="msg"></div>
+
+    <div class="bar">
+        <button id="newBtn">Ván mới</button>
+        <button id="pauseBtn" disabled>Tạm dừng</button>
+        <button id="soundBtn" class="icon" title="Âm thanh" aria-label="Âm thanh"></button>
+        <button id="helpBtn" class="icon" title="Luật chơi" aria-label="Luật chơi">?</button>
+    </div>
+</div>
+
+<div class="dlg" id="dlg" hidden><div class="box" id="dlgBox" role="dialog" aria-modal="true"></div></div>
+
+<script>
+'use strict';
+/* =========================================================
+   Tank 1990 (Battle City): drive your tank, guard the base (the star
+   at the bottom) and destroy the 20 enemy tanks of each stage. The
+   game ends when the base is hit or every life is lost.
+   The field is 26 x 26 squares of 8 units (a tank is 16 x 16). Brick
+   breaks under fire, steel only under a 3-star tank's fire, water stops
+   tanks but not shots, trees hide tanks. Tanks turn on a half-tile grid,
+   so they slip into gaps easily.
+   Enemies: basic, fast, fast-shooting and armoured (4 hits). The 4th,
+   11th and 18th flash red: hit one and a bonus appears (star, helmet,
+   shovel, clock, grenade, tank).
+   Stages 1-4 are drawn by hand, later ones are built from the stage
+   number (the same stage always looks the same).
+   Saved in this browser only (localStorage): the game (at the start of
+   the stage reached), the best score and the sound setting.
+   ========================================================= */
+const T = 8, N = 26, W = N * T;
+const EMPTY = 0, BRICK = 1, STEEL = 2, WATER = 3, TREES = 4, BASE = 5;
+const DX = [0, 1, 0, -1], DY = [-1, 0, 1, 0];      // up, right, down, left
+const EPS = 1e-4;
+const KEY = {game: 'tank.game', best: 'tank.best', sound: 'tank.sound'};
+const LIVES = 3, PER_STAGE = 20, MAX_ON_FIELD = 4;
+const PLAYER_SPEED = 48, SHOT = 150, SHOT_FAST = 240;
+const ENEMY = {
+    basic: {speed: 30, shot: 120, hp: 1, pts: 100, color: '#c3c7cc'},
+    fast:  {speed: 62, shot: 130, hp: 1, pts: 200, color: '#7fd6ff'},
+    power: {speed: 38, shot: 220, hp: 1, pts: 300, color: '#f2a65a'},
+    armor: {speed: 30, shot: 140, hp: 4, pts: 400, color: '#c3c7cc'}
+};
+const ARMOR_COLORS = ['', '#c3c7cc', '#e0905a', '#d6c25b', '#6fbf73'];   // by hits left
+const SPAWNS = [[96, 0], [192, 0], [0, 0]];
+const HOME = [64, 192];
+const BONUS = {
+    star:    {name: 'Sao: bắn mạnh hơn (1 sao đạn nhanh, 2 sao bắn 2 viên, 3 sao phá được thép)'},
+    helmet:  {name: 'Mũ: khiên chắn đạn 10 giây'},
+    shovel:  {name: 'Xẻng: tường thép quanh căn cứ 18 giây'},
+    clock:   {name: 'Đồng hồ: xe địch đứng im 10 giây'},
+    grenade: {name: 'Lựu đạn: nổ hết xe địch đang có'},
+    tank:    {name: 'Xe tăng: thêm 1 mạng'}
+};
+const BONUS_KINDS = ['star', 'star', 'helmet', 'shovel', 'clock', 'grenade', 'tank'];
+const FONT = 'system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif';
+
+/* stages: the left 7 tile columns of 13 rows (mirrored to the right).
+   . empty  # brick  @ steel  ~ water  % trees  l r t b half brick (left, right, top, bottom) */
+const MAPS = [
+    ['.......', '.#.#.#.', '.#.#.#.', '.#.#.#@', '.#.#.#.', '.#.#...', '.....#.',
+     '#.##...', '@....#.', '.#.#.##', '.#.#.#.', '.#.#...', '.#.#...'],
+    ['...@...', '.#.@...', '.#...#@', '.#.%%#.', '#..%%..', '%%%...@', '...@%%.',
+     '@@.#.#.', '.#.#...', '.#~~.#.', '.#.#.#.', '.#.....', '.#.....'],
+    ['.......', '.%%%%..', '.%~~~##', '.%~.#..', '..~.#@.', '#.~....', '#.~~~.#',
+     '...#..#', '@@.#.##', '...%%..', '.#.%%#.', '.#...#.', '.#.....'],
+    ['.......', '#t#t#.#', '#.#.#.#', 'b.b.b.b', '..@....', '#####..', '......@',
+     '.##tt##', '.#.....', '.#.%.#.', '...%.#.', '@#.....', '.......']
+];
+const FORT = [];                                     // the brick ring around the base
+for(let r = 23; r < 26; r++) for(let c = 11; c < 15; c++) if(r === 23 || c === 11 || c === 14) FORT.push(r * N + c);
+
+const $ = id => document.getElementById(id);
+const store = {
+    get(k){ try{ return JSON.parse(localStorage.getItem(k)); }catch(e){ return null; } },
+    set(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
+};
+const rand = (a, b) => a + Math.random() * (b - a);
+const cv = $('field'), ctx = cv.getContext('2d');
+
+let S;              // {stage, score, lives, power}: what carries from stage to stage
+let G = null;       // the stage being played (see startStage)
+let mode = 'ready'; // ready (waiting for a tap or key), play, pause, over
+let soundOn = store.get(KEY.sound) !== false;
+
+/* ---------- stages ---------- */
+function mulberry32(a){
+    return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+}
+const MIRROR = {l: 'r', r: 'l'};
+function mirror(half){ return half.map(h => h + [...h.slice(0, 6)].reverse().map(ch => MIRROR[ch] || ch).join('')); }
+
+/* every enemy spawn point and the base must be reachable from the player's spot (steel and water block) */
+function connected(rows){
+    const seen = new Set(['12,4']), todo = [[12, 4]];
+    while(todo.length){
+        const [r, c] = todo.pop();
+        for(let d = 0; d < 4; d++){
+            const rr = r + DY[d], cc = c + DX[d], k = rr + ',' + cc;
+            if(rr < 0 || cc < 0 || rr > 12 || cc > 12 || seen.has(k) || '@~'.includes(rows[rr][cc])) continue;
+            seen.add(k); todo.push([rr, cc]);
+        }
+    }
+    return ['0,0', '0,6', '0,12', '10,6'].every(k => seen.has(k));
+}
+
+function genHalf(stage){
+    const rnd = mulberry32(stage * 7919 + 17);
+    for(let tries = 0; tries < 60; tries++){
+        const g = Array.from({length: 13}, () => Array(7).fill('.'));
+        const pieces = 16 + Math.floor(rnd() * 8);
+        for(let k = 0; k < pieces; k++){
+            const roll = rnd();
+            const ch = roll < .52 ? '#' : roll < .64 ? '@' : roll < .74 ? '~' : roll < .9 ? '%' : 'lrtb'[Math.floor(rnd() * 4)];
+            const shapes = '@~'.includes(ch) ? [[1, 1], [1, 2], [2, 1]] : [[1, 1], [1, 2], [2, 1], [1, 3], [3, 1], [2, 2], [1, 4], [4, 1]];
+            const [h, w] = shapes[Math.floor(rnd() * shapes.length)];
+            const r0 = Math.floor(rnd() * 13), c0 = Math.floor(rnd() * 7);
+            for(let r = r0; r < r0 + h && r < 13; r++) for(let c = c0; c < c0 + w && c < 7; c++) g[r][c] = ch;
+        }
+        for(const [r, c] of [[0, 0], [1, 0], [0, 6], [1, 6], [12, 4], [11, 4]]) g[r][c] = '.';
+        const half = g.map(r => r.join(''));
+        if(connected(mirror(half))) return half;
+    }
+    return MAPS[0];
+}
+
+function buildMap(stage){
+    const rows = mirror(stage <= MAPS.length ? MAPS[stage - 1] : genHalf(stage));
+    const map = new Uint8Array(N * N);
+    const set = (r, c, v) => { map[r * N + c] = v; };
+    rows.forEach((row, tr) => [...row].forEach((ch, tc) => {
+        const r = tr * 2, c = tc * 2;
+        const all = v => { set(r, c, v); set(r, c + 1, v); set(r + 1, c, v); set(r + 1, c + 1, v); };
+        if(ch === '#') all(BRICK); else if(ch === '@') all(STEEL); else if(ch === '~') all(WATER); else if(ch === '%') all(TREES);
+        else if(ch === 'l'){ set(r, c, BRICK); set(r + 1, c, BRICK); }
+        else if(ch === 'r'){ set(r, c + 1, BRICK); set(r + 1, c + 1, BRICK); }
+        else if(ch === 't'){ set(r, c, BRICK); set(r, c + 1, BRICK); }
+        else if(ch === 'b'){ set(r + 1, c, BRICK); set(r + 1, c + 1, BRICK); }
+    }));
+    // spawn points and the player's spot are always open; the base sits in its brick ring
+    const clear = (tr, tc) => { for(let r = tr * 2; r < tr * 2 + 2; r++) for(let c = tc * 2; c < tc * 2 + 2; c++) set(r, c, EMPTY); };
+    [[0, 0], [0, 6], [0, 12], [12, 4], [12, 8]].forEach(([r, c]) => clear(r, c));
+    for(let r = 22; r < 26; r++) for(let c = 10; c < 16; c++) set(r, c, EMPTY);
+    FORT.forEach(i => { map[i] = BRICK; });
+    [[24, 12], [24, 13], [25, 12], [25, 13]].forEach(([r, c]) => set(r, c, BASE));
+    return map;
+}
+
+/* the 20 enemies of a stage: more fast, fast-shooting and armoured ones as stages go up */
+function makeQueue(stage){
+    let armor = Math.min(8, Math.floor(stage * 0.8)), power = Math.min(6, Math.floor((stage - 1) * 0.7)), fast = Math.min(8, 2 + Math.floor(stage * 0.5));
+    while(armor + power + fast > PER_STAGE) fast > 4 ? fast-- : power--;
+    const list = [];
+    const add = (kind, n) => { for(let k = 0; k < n; k++) list.push(kind); };
+    add('armor', armor); add('power', power); add('fast', fast); add('basic', PER_STAGE - armor - power - fast);
+    for(let i = list.length - 1; i > 0; i--){ const j = Math.floor(Math.random() * (i + 1)); [list[i], list[j]] = [list[j], list[i]]; }
+    return list.map((kind, i) => ({kind, flash: i === 3 || i === 10 || i === 17}));
+}
+
+function startStage(){
+    G = {map: buildMap(S.stage), queue: makeQueue(S.stage), enemies: [], bullets: [], booms: [], pops: [], player: null, bonus: null,
+         phase: 'intro', phaseT: 1.6, spawnT: 0, spawnIdx: 0, freeze: 0, shovel: 0, respawnT: 0, baseDead: false, time: 0};
+    save(); hud();
+}
+
+/* ---------- tanks ---------- */
+function allTanks(){ return G.player ? [G.player, ...G.enemies] : G.enemies; }
+const overlap = (a, x, y) => Math.abs(a.x - x) < 16 - EPS && Math.abs(a.y - y) < 16 - EPS;
+
+function free(t, x, y){
+    if(x < -EPS || y < -EPS || x > W - 16 + EPS || y > W - 16 + EPS) return false;
+    const r0 = Math.floor((y + EPS) / T), r1 = Math.floor((y + 16 - EPS) / T);
+    const c0 = Math.floor((x + EPS) / T), c1 = Math.floor((x + 16 - EPS) / T);
+    for(let r = r0; r <= r1; r++) for(let c = c0; c <= c1; c++){
+        const v = G.map[r * N + c];
+        if(v === BRICK || v === STEEL || v === WATER || v === BASE) return false;
+    }
+    // another tank blocks, unless the two already overlap (just spawned): then they may move apart
+    for(const o of allTanks()) if(o !== t && overlap(o, x, y) && !overlap(o, t.x, t.y)) return false;
+    return true;
+}
+
+/* move a tank dist units in direction d; turning snaps it to the half-tile grid. Returns the distance moved. */
+function tryMove(t, d, dist){
+    if(t.dir !== d){
+        if(d % 2 !== t.dir % 2){ if(d % 2 === 0) t.x = Math.round(t.x / T) * T; else t.y = Math.round(t.y / T) * T; }
+        t.dir = d;
+    }
+    const nx = t.x + DX[d] * dist, ny = t.y + DY[d] * dist;
+    if(free(t, nx, ny)){ t.x = nx; t.y = ny; t.tread += dist; return dist; }
+    // blocked: slide up against the wall (walls lie on the 8-unit grid)
+    let sx = t.x, sy = t.y;
+    if(d === 0) sy = Math.ceil(ny / T) * T; else if(d === 2) sy = Math.floor(ny / T) * T;
+    else if(d === 1) sx = Math.floor(nx / T) * T; else sx = Math.ceil(nx / T) * T;
+    const moved = Math.abs(sx - t.x) + Math.abs(sy - t.y);
+    if(moved > EPS && (sx - t.x) * DX[d] + (sy - t.y) * DY[d] > 0 && free(t, sx, sy)){ t.x = sx; t.y = sy; t.tread += moved; return moved; }
+    return 0;
+}
+
+function fire(t){
+    const max = t.enemy ? 1 : (S.power >= 2 ? 2 : 1);
+    if(G.bullets.filter(b => b.owner === t && !b.dead).length >= max) return false;
+    const b = {x: t.x + 8 + DX[t.dir] * 6, y: t.y + 8 + DY[t.dir] * 6, d: t.dir, owner: t, player: !t.enemy,
+               speed: t.enemy ? t.shot : (S.power >= 1 ? SHOT_FAST : SHOT), steel: !t.enemy && S.power >= 3, dead: false};
+    G.bullets.push(b);
+    if(!t.enemy) beep('fire');
+    collide(b);
+    return true;
+}
+
+function spawnPlayer(){
+    G.player = {x: HOME[0], y: HOME[1], dir: 0, spawnT: 0.6, shield: 3.6, tread: 0, cool: 0};
+}
+
+function spawnEnemy(){
+    for(let k = 0; k < SPAWNS.length; k++){
+        const [x, y] = SPAWNS[(G.spawnIdx + k) % SPAWNS.length];
+        if(allTanks().some(o => overlap(o, x, y))) continue;
+        G.spawnIdx = (G.spawnIdx + k + 1) % SPAWNS.length;
+        const q = G.queue.shift(), spec = ENEMY[q.kind];
+        G.enemies.push({enemy: true, kind: q.kind, flash: q.flash, x, y, dir: 2, go: 2, speed: spec.speed, shot: spec.shot, hp: spec.hp,
+                        spawnT: 1, tread: 0, turnT: rand(1, 3), fireT: rand(0.4, 1.4), blockT: 0, patience: rand(0.2, 0.8)});
+        return true;
+    }
+    return false;
+}
+
+/* enemies head for the base, sometimes for the player, sometimes anywhere */
+function chooseDir(e){
+    const r = Math.random();
+    let tx, ty;
+    if(r < 0.5){ tx = 104; ty = 200; }
+    else if(r < 0.7 && G.player){ tx = G.player.x + 8; ty = G.player.y + 8; }
+    else return Math.floor(Math.random() * 4);
+    const dx = tx - (e.x + 8), dy = ty - (e.y + 8);
+    if(Math.abs(dx) < 8) return dy > 0 ? 2 : 0;
+    if(Math.abs(dy) < 8) return dx > 0 ? 1 : 3;
+    return Math.random() < 0.5 ? (dx > 0 ? 1 : 3) : (dy > 0 ? 2 : 0);
+}
+function turn(e){ e.go = chooseDir(e); e.blockT = 0; e.patience = rand(0.15, 0.9); }
+
+/* ---------- shots ---------- */
+function boom(x, y, big){ G.booms.push({x, y, t: 0, dur: big ? 0.5 : 0.18, big}); }
+
+/* the squares in front of a shot: the two it straddles (shots fly on the 8-unit lines) */
+function hitMap(b){
+    const lx = b.x + DX[b.d] * 2, ly = b.y + DY[b.d] * 2;
+    if(lx < 0 || ly < 0 || lx >= W || ly >= W){ boom(b.x, b.y, false); if(b.player) beep('wall'); return true; }
+    const cells = new Set();
+    if(b.d % 2 === 0){ const r = Math.floor(ly / T); cells.add(r * N + Math.floor((b.x - 4) / T)); cells.add(r * N + Math.floor((b.x + 3) / T)); }
+    else{ const c = Math.floor(lx / T); cells.add(Math.floor((b.y - 4) / T) * N + c); cells.add(Math.floor((b.y + 3) / T) * N + c); }
+    let hit = false, sound = '';
+    for(const i of cells){
+        if(i < 0 || i >= N * N) continue;
+        const v = G.map[i];
+        if(v === BRICK){ G.map[i] = EMPTY; hit = true; sound = sound || 'brick'; }
+        else if(v === STEEL){ hit = true; if(b.steel){ G.map[i] = EMPTY; sound = 'brick'; } else sound = 'steel'; }
+        else if(v === BASE){ hit = true; if(!G.baseDead) destroyBase(); }
+    }
+    if(hit){ boom(b.x, b.y, false); if(b.player && sound) beep(sound); }
+    return hit;
+}
+
+function collide(b){
+    if(b.dead) return;
+    if(hitMap(b)){ b.dead = true; return; }
+    for(const o of G.bullets){
+        if(o !== b && !o.dead && o.player !== b.player && Math.abs(o.x - b.x) < 4 && Math.abs(o.y - b.y) < 4){ b.dead = o.dead = true; return; }
+    }
+    for(const t of allTanks()){
+        if(t === b.owner || t.spawnT > 0 || t.dead) continue;
+        if(b.x > t.x - 1 && b.x < t.x + 17 && b.y > t.y - 1 && b.y < t.y + 17){
+            b.dead = true;
+            if(b.player && t.enemy) hitEnemy(t);
+            else if(!b.player && !t.enemy) hitPlayer(t);
+            return;
+        }
+    }
+}
+
+function hitEnemy(e){
+    if(e.flash){ e.flash = false; dropBonus(); }
+    if(--e.hp > 0){ beep('armor'); return; }
+    e.dead = true;
+    G.enemies = G.enemies.filter(o => o !== e);
+    boom(e.x + 8, e.y + 8, true);
+    const pts = ENEMY[e.kind].pts;
+    S.score += pts;
+    G.pops.push({x: e.x + 8, y: e.y + 8, t: 0, text: String(pts)});
+    beep('boom'); hud();
+}
+
+function hitPlayer(p){
+    if(p.shield > 0) return;
+    boom(p.x + 8, p.y + 8, true);
+    G.player = null;
+    S.lives--; S.power = 0;
+    beep('die'); hud();
+    if(S.lives <= 0) lose(); else G.respawnT = 1.2;
+}
+
+function destroyBase(){
+    G.baseDead = true;
+    boom(104, 200, true); boom(100, 196, true);
+    beep('base');
+    lose();
+}
+function lose(){ if(G.phase !== 'lost'){ G.phase = 'lost'; G.phaseT = 2.4; } }
+
+/* ---------- bonuses ---------- */
+function dropBonus(){
+    const kind = BONUS_KINDS[Math.floor(Math.random() * BONUS_KINDS.length)];
+    let x, y;
+    do{ x = Math.floor(rand(0, 25)) * T; y = Math.floor(rand(0, 23)) * T; }while(x > 72 && x < 120 && y > 160);
+    G.bonus = {kind, x, y, t: 15};
+    beep('bonus');
+}
+function takeBonus(){
+    const k = G.bonus.kind, p = G.player;
+    G.bonus = null;
+    S.score += 500;
+    G.pops.push({x: p.x + 8, y: p.y + 8, t: 0, text: '500'});
+    if(k === 'star') S.power = Math.min(3, S.power + 1);
+    else if(k === 'helmet') p.shield = 10;
+    else if(k === 'shovel'){ G.shovel = 18; FORT.forEach(i => { G.map[i] = STEEL; }); }
+    else if(k === 'clock') G.freeze = 10;
+    else if(k === 'grenade'){ G.enemies.forEach(e => { if(e.spawnT <= 0) boom(e.x + 8, e.y + 8, true); }); G.enemies = G.enemies.filter(e => e.spawnT > 0); beep('boom'); }
+    else if(k === 'tank') S.lives++;
+    beep(k === 'tank' ? 'life' : 'pick');
+    hud();
+}
+
+/* ---------- one step of the game ---------- */
+let padDir = -1, held = [], fireKey = false, firePad = false, fireQueued = false;
+function step(dt){
+    G.time += dt;
+    G.booms.forEach(b => { b.t += dt; }); G.booms = G.booms.filter(b => b.t < b.dur);
+    G.pops.forEach(p => { p.t += dt; }); G.pops = G.pops.filter(p => p.t < 0.9);
+    if(G.phase === 'intro'){
+        G.phaseT -= dt;
+        if(G.phaseT <= 0){ G.phase = 'play'; spawnPlayer(); G.spawnT = 0.2; }
+        fireQueued = false;
+        return;
+    }
+    if(G.phase === 'lost'){
+        G.phaseT -= dt;
+        if(G.phaseT <= 0) gameOver();
+        return;
+    }
+    if(G.freeze > 0) G.freeze -= dt;
+    if(G.shovel > 0){
+        G.shovel -= dt;
+        // blinks brick / steel for its last 2 seconds, then the ring is brick again (and whole)
+        const v = G.shovel <= 0 ? BRICK : G.shovel < 2 ? (Math.floor(G.shovel * 4) % 2 ? BRICK : STEEL) : STEEL;
+        FORT.forEach(i => { G.map[i] = v; });
+    }
+
+    const p = G.player;
+    if(p){
+        if(p.spawnT > 0) p.spawnT -= dt;
+        else{
+            if(p.shield > 0) p.shield -= dt;
+            const d = padDir >= 0 ? padDir : held.length ? held[held.length - 1] : -1;
+            if(d >= 0) tryMove(p, d, PLAYER_SPEED * dt);
+            p.cool -= dt;
+            if((fireKey || firePad || fireQueued) && p.cool <= 0 && fire(p)) p.cool = 0.12;
+            if(G.bonus && Math.abs(G.bonus.x - p.x) < 12 && Math.abs(G.bonus.y - p.y) < 12) takeBonus();
+        }
+    }else if(S.lives > 0){
+        G.respawnT -= dt;
+        if(G.respawnT <= 0) spawnPlayer();
+    }
+    fireQueued = false;
+
+    if(G.phase === 'play' && G.queue.length && G.enemies.length < MAX_ON_FIELD){
+        G.spawnT -= dt;
+        if(G.spawnT <= 0) G.spawnT = spawnEnemy() ? Math.max(1.2, 3 - S.stage * 0.1) : 0.3;
+    }
+
+    const fireMul = Math.max(0.45, 1 - S.stage * 0.04);
+    for(const e of G.enemies){
+        if(e.spawnT > 0){ e.spawnT -= dt; continue; }
+        if(G.freeze > 0) continue;
+        if(tryMove(e, e.go, e.speed * dt) === 0){
+            e.blockT += dt;
+            if(e.blockT > e.patience){ if(Math.random() < 0.5) fire(e); turn(e); }
+        }
+        e.turnT -= dt;
+        if(e.turnT <= 0){ e.turnT = rand(1.5, 4); if(Math.random() < 0.6) turn(e); }
+        e.fireT -= dt;
+        if(e.fireT <= 0){ fire(e); e.fireT = rand(0.5, 1.8) * fireMul; }
+    }
+
+    for(const b of G.bullets){
+        let dist = b.speed * dt;
+        while(dist > 0 && !b.dead){
+            const s = Math.min(2, dist);
+            dist -= s;
+            b.x += DX[b.d] * s; b.y += DY[b.d] * s;
+            collide(b);
+        }
+    }
+    G.bullets = G.bullets.filter(b => !b.dead);
+
+    if(G.bonus && (G.bonus.t -= dt) <= 0) G.bonus = null;
+
+    if(G.phase === 'play' && !G.queue.length && !G.enemies.length){ G.phase = 'won'; G.phaseT = 2.2; beep('level'); }
+    else if(G.phase === 'won' && (G.phaseT -= dt) <= 0){ S.stage++; startStage(); beep('start'); }
+    hudFoes();
+}
+
+/* ---------- drawing ---------- */
+function drawBrick(x, y){
+    ctx.fillStyle = '#b4532a'; ctx.fillRect(x, y, 8, 8);
+    ctx.fillStyle = '#d27447'; ctx.fillRect(x, y, 8, 0.7); ctx.fillRect(x, y + 4, 8, 0.7);
+    ctx.fillStyle = '#5e260d';
+    ctx.fillRect(x, y + 3.3, 8, 0.7); ctx.fillRect(x, y + 7.3, 8, 0.7);
+    ctx.fillRect(x + 3.3, y, 0.7, 3.3); ctx.fillRect(x + 7.3, y + 4, 0.7, 3.3);
+}
+function drawSteel(x, y){
+    ctx.fillStyle = '#6f757d'; ctx.fillRect(x, y, 8, 8);
+    ctx.fillStyle = '#b9bec5'; ctx.fillRect(x, y, 7.3, 7.3);
+    ctx.fillStyle = '#eef0f2'; ctx.fillRect(x + 2, y + 2, 3.6, 3.6);
+}
+function drawWater(x, y, t){
+    ctx.fillStyle = '#1d4fa8'; ctx.fillRect(x, y, 8, 8);
+    ctx.fillStyle = '#5b95f0';
+    const o = (t * 3 + (x + y) / 8) % 2 < 1 ? 0 : 2;
+    ctx.fillRect(x + o, y + 1.5, 3, 0.8); ctx.fillRect(x + 4 - o, y + 5.5, 3, 0.8);
+}
+function drawTrees(x, y){
+    ctx.fillStyle = '#1e5a25'; ctx.fillRect(x, y, 8, 8);
+    ctx.fillStyle = '#3c9a44';
+    for(const [cx, cy] of [[2, 2], [6, 2.5], [2.5, 6], [6, 6]]){ ctx.beginPath(); ctx.arc(x + cx, y + cy, 1.9, 0, 7); ctx.fill(); }
+}
+function starPath(cx, cy, R, r){
+    ctx.beginPath();
+    for(let k = 0; k < 10; k++){ const a = -Math.PI / 2 + k * Math.PI / 5, rr = k % 2 ? r : R; ctx.lineTo(cx + Math.cos(a) * rr, cy + Math.sin(a) * rr); }
+    ctx.closePath();
+}
+function drawBase(){
+    const x = 96, y = 192;
+    ctx.fillStyle = G.baseDead ? '#2a2c30' : '#3b4048'; ctx.fillRect(x + 1, y + 1, 14, 14);
+    if(G.baseDead){
+        ctx.strokeStyle = '#777'; ctx.lineWidth = 1.2;
+        ctx.beginPath(); ctx.moveTo(x + 3, y + 3); ctx.lineTo(x + 13, y + 13); ctx.moveTo(x + 13, y + 3); ctx.lineTo(x + 3, y + 13); ctx.stroke();
+        starPath(x + 8, y + 8, 5, 2.2); ctx.fillStyle = '#6b5a2a'; ctx.fill();
+    }else{
+        starPath(x + 8, y + 8.5, 6.5, 2.8); ctx.fillStyle = '#f5b301'; ctx.fill();
+    }
+}
+function shade(hex, f){
+    const n = parseInt(hex.slice(1), 16), c = s => Math.max(0, Math.min(255, Math.round(((n >> s) & 255) * f)));
+    return 'rgb(' + c(16) + ',' + c(8) + ',' + c(0) + ')';
+}
+function tankColor(t){
+    if(!t.enemy) return '#f2c43d';
+    if(t.flash && Math.floor(G.time * 6) % 2) return '#ff4d4d';
+    return t.kind === 'armor' ? ARMOR_COLORS[t.hp] : ENEMY[t.kind].color;
+}
+function drawTank(t){
+    const cx = t.x + 8, cy = t.y + 8;
+    if(t.spawnT > 0){                                  // a blinking star where the tank appears
+        const s = 3 + 4 * Math.abs(Math.sin(G.time * 10));
+        starPath(cx, cy, s, s * 0.4); ctx.fillStyle = '#fff'; ctx.fill();
+        return;
+    }
+    const col = tankColor(t);
+    ctx.save(); ctx.translate(cx, cy); ctx.rotate(t.dir * Math.PI / 2);
+    ctx.fillStyle = shade(col, 0.45);
+    ctx.fillRect(-7.5, -7.5, 4, 15); ctx.fillRect(3.5, -7.5, 4, 15);
+    ctx.fillStyle = shade(col, 0.8);
+    const off = 2.5 - (t.tread % 2.5);
+    for(let yy = -7.5 + off; yy < 7; yy += 2.5){ ctx.fillRect(-7.5, yy, 4, 0.9); ctx.fillRect(3.5, yy, 4, 0.9); }
+    ctx.fillStyle = col; ctx.fillRect(-4, -5, 8, 11.5);
+    if(t.kind === 'armor'){ ctx.strokeStyle = shade(col, 0.6); ctx.lineWidth = 0.8; ctx.strokeRect(-3.2, -4.2, 6.4, 9.9); }
+    if(t.kind === 'fast'){ ctx.fillStyle = shade(col, 0.6); ctx.fillRect(-4, 3.5, 8, 1); }
+    ctx.fillStyle = shade(col, 0.7); ctx.beginPath(); ctx.arc(0, 1, 3.4, 0, 7); ctx.fill();
+    const bw = t.enemy ? (t.kind === 'power' ? 2.4 : 1.8) : 1.8 + (S.power >= 2 ? 0.8 : 0);
+    ctx.fillStyle = col; ctx.fillRect(-bw / 2, -8.5, bw, 8);
+    if(!t.enemy && S.power >= 3){ ctx.fillStyle = '#e5484d'; ctx.fillRect(-bw / 2, -8.5, bw, 1.6); }
+    ctx.restore();
+    if(t.shield > 0){
+        ctx.save(); ctx.strokeStyle = 'rgba(140,200,255,.9)'; ctx.lineWidth = 1; ctx.setLineDash([2.5, 2]); ctx.lineDashOffset = -G.time * 20;
+        ctx.beginPath(); ctx.arc(cx, cy, 10.5, 0, 7); ctx.stroke(); ctx.restore();
+    }
+}
+function drawBonus(b){
+    if(b.t < 4 && Math.floor(G.time * 6) % 2) return;  // blinks before it goes
+    const x = b.x, y = b.y, cx = x + 8, cy = y + 8;
+    ctx.fillStyle = '#f4f1e8'; ctx.strokeStyle = '#e5484d'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.roundRect ? ctx.roundRect(x + 0.5, y + 0.5, 15, 15, 2.5) : ctx.rect(x + 0.5, y + 0.5, 15, 15); ctx.fill(); ctx.stroke();
+    ctx.lineWidth = 1.4; ctx.lineCap = 'round';
+    switch(b.kind){
+        case 'star': starPath(cx, cy + 0.5, 6, 2.5); ctx.fillStyle = '#f5b301'; ctx.fill(); break;
+        case 'helmet':
+            ctx.fillStyle = '#3a76d8'; ctx.beginPath(); ctx.arc(cx, cy + 2, 5.2, Math.PI, 0); ctx.fill(); ctx.fillRect(cx - 6.5, cy + 2, 13, 1.8); break;
+        case 'shovel':
+            ctx.strokeStyle = '#8d5a3b'; ctx.beginPath(); ctx.moveTo(cx - 4.5, cy - 4.5); ctx.lineTo(cx + 1, cy + 1); ctx.stroke();
+            ctx.fillStyle = '#7b8088'; ctx.save(); ctx.translate(cx + 2.5, cy + 2.5); ctx.rotate(-Math.PI / 4);
+            ctx.beginPath(); ctx.ellipse(0, 0, 2.6, 3.6, 0, 0, 7); ctx.fill(); ctx.restore(); break;
+        case 'clock':
+            ctx.strokeStyle = '#333'; ctx.beginPath(); ctx.arc(cx, cy, 5.2, 0, 7); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(cx, cy - 3.4); ctx.lineTo(cx, cy); ctx.lineTo(cx + 2.6, cy + 1.2); ctx.stroke(); break;
+        case 'grenade':
+            ctx.fillStyle = '#2e7d32'; ctx.beginPath(); ctx.arc(cx, cy + 1.5, 4.5, 0, 7); ctx.fill();
+            ctx.fillStyle = '#555'; ctx.fillRect(cx - 1.6, cy - 5, 3.2, 2.4);
+            ctx.strokeStyle = '#555'; ctx.lineWidth = 0.9; ctx.beginPath(); ctx.arc(cx + 3, cy - 4.2, 1.6, 0, 7); ctx.stroke(); break;
+        case 'tank':
+            ctx.fillStyle = '#806a1c'; ctx.fillRect(cx - 5, cy - 4, 3, 9); ctx.fillRect(cx + 2, cy - 4, 3, 9);
+            ctx.fillStyle = '#d9a920'; ctx.fillRect(cx - 2.5, cy - 2.5, 5, 7); ctx.fillRect(cx - 0.7, cy - 6, 1.4, 5); break;
+    }
+    ctx.lineCap = 'butt';
+}
+function text(str, x, y, size, color){
+    ctx.font = 'bold ' + size + 'px ' + FONT; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.lineWidth = size / 5; ctx.strokeStyle = 'rgba(0,0,0,.75)'; ctx.strokeText(str, x, y);
+    ctx.fillStyle = color; ctx.fillText(str, x, y);
+}
+function banner(title, sub, color){
+    ctx.fillStyle = 'rgba(0,0,0,.55)'; ctx.fillRect(0, W / 2 - 30, W, sub ? 60 : 44);
+    text(title, W / 2, W / 2 - (sub ? 8 : 8), 18, color || '#fff');
+    if(sub) text(sub, W / 2, W / 2 + 15, 8, '#ddd');
+}
+const isTouch = () => document.body.classList.contains('touch') || matchMedia('(hover: none) and (pointer: coarse)').matches;
+
+function draw(){
+    if(!G) return;
+    const k = cv.width / W;
+    ctx.setTransform(k, 0, 0, k, 0, 0);
+    ctx.fillStyle = '#050608'; ctx.fillRect(0, 0, W, W);
+    const m = G.map;
+    for(let r = 0; r < N; r++) for(let c = 0; c < N; c++){
+        const v = m[r * N + c];
+        if(v === BRICK) drawBrick(c * T, r * T); else if(v === STEEL) drawSteel(c * T, r * T); else if(v === WATER) drawWater(c * T, r * T, G.time);
+    }
+    drawBase();
+    allTanks().forEach(drawTank);
+    ctx.fillStyle = '#fff';
+    for(const b of G.bullets) ctx.fillRect(b.x - 1.5, b.y - 1.5, 3, 3);
+    for(let r = 0; r < N; r++) for(let c = 0; c < N; c++) if(m[r * N + c] === TREES) drawTrees(c * T, r * T);
+    for(const b of G.booms){
+        const p = b.t / b.dur, R = b.big ? 4 + 12 * p : 2 + 5 * p;
+        ctx.globalAlpha = 1 - p * 0.7;
+        ctx.fillStyle = '#e8541e'; ctx.beginPath(); ctx.arc(b.x, b.y, R, 0, 7); ctx.fill();
+        ctx.fillStyle = '#ffc94a'; ctx.beginPath(); ctx.arc(b.x, b.y, R * 0.62, 0, 7); ctx.fill();
+        ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(b.x, b.y, R * 0.28, 0, 7); ctx.fill();
+        ctx.globalAlpha = 1;
+    }
+    if(G.bonus) drawBonus(G.bonus);
+    for(const p of G.pops) text(p.text, p.x, p.y - p.t * 10, 7, '#fff');
+    if(G.freeze > 0) text('⏱ ' + Math.ceil(G.freeze), W - 14, 8, 7, '#9fd0ff');
+
+    const go = isTouch() ? 'Chạm vào đây để bắt đầu' : 'Nhấn phím cách để bắt đầu';
+    if(mode === 'ready') banner('MÀN ' + S.stage, go);
+    else if(mode === 'pause') banner('TẠM DỪNG', isTouch() ? 'Chạm để chơi tiếp' : 'Nhấn P để chơi tiếp');
+    else if(G.phase === 'intro') banner('MÀN ' + S.stage, '');
+    else if(G.phase === 'won') banner('QUA MÀN!', 'Màn ' + (S.stage + 1) + ' sắp bắt đầu', '#7ee08a');
+    else if(G.phase === 'lost' || mode === 'over') banner('HẾT VÁN', G.baseDead ? 'Căn cứ bị phá' : 'Hết mạng', '#ff6b6b');
+}
+
+function resize(){
+    const r = cv.getBoundingClientRect(), dpr = window.devicePixelRatio || 1;
+    const px = Math.max(1, Math.round(r.width * dpr));
+    if(cv.width !== px || cv.height !== px){ cv.width = cv.height = px; }
+    draw();
+}
+
+/* ---------- loop: runs while playing ---------- */
+let last = 0, raf = 0;
+function frame(t){
+    raf = 0;
+    if(window.gameMenuOpen && gameMenuOpen() && mode === 'play') pause();
+    if(mode === 'play'){
+        const dt = Math.min((t - last) / 1000, 1 / 30);
+        last = t;
+        step(dt);
+    }
+    draw();
+    if(mode === 'play') raf = requestAnimationFrame(frame);
+}
+function run(){ if(!raf){ last = performance.now(); raf = requestAnimationFrame(frame); } }
+
+function start(){
+    if(mode !== 'ready') return;
+    unlockAudio();
+    mode = 'play'; setPause(); beep('start'); say(isTouch() ? '' : 'Mũi tên / W A S D: đi · Phím cách: bắn · P: tạm dừng');
+}
+function pause(){ if(mode !== 'play') return; mode = 'pause'; held = []; fireKey = firePad = false; padDir = -1; setPause(); }
+function resume(){ if(mode !== 'pause') return; unlockAudio(); mode = 'play'; setPause(); }
+function setPause(){
+    const b = $('pauseBtn');
+    b.disabled = mode !== 'play' && mode !== 'pause';
+    b.textContent = mode === 'pause' ? 'Chơi tiếp' : 'Tạm dừng';
+    run();
+}
+/* a tap or key: starts the game, or picks it up again after a pause */
+function wake(){ unlockAudio(); if(mode === 'ready') start(); else if(mode === 'pause') resume(); }
+
+function newGame(){
+    closeDlg();
+    S = {stage: 1, score: 0, lives: LIVES, power: 0};
+    startStage();
+    mode = 'ready'; setPause();
+    start();
+}
+function gameOver(){
+    mode = 'over'; setPause();
+    const b = best(), rec = S.score > b;
+    if(rec) store.set(KEY.best, S.score);
+    store.set(KEY.game, null);
+    hud(); beep('over');
+    openDlg('<h2>' + (rec ? 'Kỷ lục mới!' : 'Hết ván') + '</h2><p>' + (G.baseDead ? 'Căn cứ đã bị phá. ' : 'Bạn đã hết mạng. ')
+        + 'Bạn được <b>' + S.score + '</b> điểm, tới màn ' + S.stage + '.' + (rec ? '' : ' Kỷ lục: ' + b + '.') + '</p>'
+        + '<div class="acts"><button class="pri" id="dNew">Ván mới</button></div>', () => { $('dNew').onclick = newGame; });
+}
+
+/* ---------- input ---------- */
+const KEYDIR = {ArrowUp: 0, KeyW: 0, ArrowRight: 1, KeyD: 1, ArrowDown: 2, KeyS: 2, ArrowLeft: 3, KeyA: 3};
+const FIRE_KEYS = ['Space', 'KeyJ', 'KeyK', 'Enter', 'NumpadEnter'];
+document.addEventListener('keydown', e => {
+    if(window.gameMenuOpen && gameMenuOpen()) return;
+    if(!$('dlg').hidden){ if(e.key === 'Escape') closeDlg(); return; }
+    if(e.ctrlKey || e.metaKey || e.altKey) return;
+    const d = KEYDIR[e.code];
+    if(d !== undefined || FIRE_KEYS.includes(e.code)){
+        e.preventDefault();
+        if(document.activeElement && document.activeElement.tagName === 'BUTTON') document.activeElement.blur();
+        if(mode === 'over') return;
+        if(d !== undefined){ if(!held.includes(d)) held.push(d); }
+        else if(!e.repeat){ fireKey = true; fireQueued = true; }
+        wake();
+    }
+    else if(e.code === 'KeyP' || e.key === 'Escape'){ if(mode === 'play') pause(); else if(mode === 'pause') resume(); }
+});
+document.addEventListener('keyup', e => {
+    const d = KEYDIR[e.code];
+    if(d !== undefined) held = held.filter(x => x !== d);
+    if(FIRE_KEYS.includes(e.code)) fireKey = false;
+});
+window.addEventListener('blur', () => { held = []; fireKey = false; pause(); });
+document.addEventListener('visibilitychange', () => { if(document.hidden) pause(); });
+
+function touched(e){ if(e.pointerType === 'touch' || e.pointerType === 'pen') document.body.classList.add('touch'); }
+cv.addEventListener('pointerdown', e => {
+    touched(e);
+    if(mode === 'play') pause(); else wake();
+});
+
+/* the direction pad: the finger's side of the centre picks the direction, sliding changes it */
+const stick = $('stick');
+let stickId = null;
+function stickAt(e){
+    const r = stick.getBoundingClientRect(), dx = e.clientX - (r.left + r.width / 2), dy = e.clientY - (r.top + r.height / 2);
+    padDir = Math.hypot(dx, dy) < r.width * 0.1 ? -1 : Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 1 : 3) : (dy > 0 ? 2 : 0);
+    stick.dataset.dir = padDir < 0 ? '' : padDir;
+}
+stick.addEventListener('pointerdown', e => {
+    e.preventDefault(); touched(e);
+    if(mode === 'over') return;
+    stickId = e.pointerId;
+    try{ stick.setPointerCapture(e.pointerId); }catch(err){}
+    wake(); stickAt(e);
+});
+stick.addEventListener('pointermove', e => { if(e.pointerId === stickId) stickAt(e); });
+const stickUp = e => { if(e.pointerId !== stickId) return; stickId = null; padDir = -1; stick.dataset.dir = ''; };
+stick.addEventListener('pointerup', stickUp);
+stick.addEventListener('pointercancel', stickUp);
+
+const fireBtn = $('fire');
+fireBtn.addEventListener('pointerdown', e => {
+    e.preventDefault(); touched(e);
+    if(mode === 'over') return;
+    try{ fireBtn.setPointerCapture(e.pointerId); }catch(err){}
+    firePad = true; fireQueued = true; fireBtn.classList.add('on');
+    wake();
+});
+const fireUp = () => { firePad = false; fireBtn.classList.remove('on'); };
+fireBtn.addEventListener('pointerup', fireUp);
+fireBtn.addEventListener('pointercancel', fireUp);
+$('pad').addEventListener('contextmenu', e => e.preventDefault());
+
+$('newBtn').onclick = () => {
+    if(mode === 'over' || (S.score === 0 && S.stage === 1)) return newGame();
+    pause();
+    confirmBox('Ván mới?', 'Ván đang chơi (' + S.score + ' điểm, màn ' + S.stage + ') sẽ bị bỏ.', 'Ván mới', newGame);
+};
+$('pauseBtn').onclick = () => { if(mode === 'play') pause(); else resume(); };
+$('soundBtn').onclick = () => { soundOn = !soundOn; store.set(KEY.sound, soundOn); setSoundIcon(); unlockAudio(); beep('tap'); };
+$('helpBtn').onclick = () => { pause(); openDlg('<h2>Luật chơi</h2><ul class="rules">'
+    + '<li>Lái xe tăng vàng bảo vệ căn cứ (ngôi sao ở giữa cạnh dưới) và tiêu diệt 20 xe địch để qua màn.</li>'
+    + '<li>Điện thoại: bàn phím hướng bên trái, nút <b>Bắn</b> bên phải (giữ để bắn liên tục); chạm vào chiến trường để tạm dừng. '
+    + 'Máy tính: phím mũi tên hoặc W A S D để đi, phím cách để bắn, P tạm dừng.</li>'
+    + '<li>Tường gạch bắn vỡ được, tường thép thì không (trừ khi có 3 sao). Xe không đi qua nước nhưng đạn bay qua. Bụi cây che xe.</li>'
+    + '<li>Xe địch: thường 100 điểm, nhanh (xanh) 200, đạn nhanh (cam) 300, bọc thép 400 (cần 4 phát, đổi màu sau mỗi phát).</li>'
+    + '<li>Xe địch nhấp nháy đỏ: bắn trúng thì hiện một món thưởng (500 điểm khi nhặt):<br>'
+    + Object.values(BONUS).map(b => '• ' + b.name).join('<br>') + '</li>'
+    + '<li>Căn cứ bị bắn trúng hoặc hết mạng là hết ván. Mất mạng thì mất hết sao. Ván đang chơi tự lưu (từ đầu màn) trên máy này.</li>'
+    + '</ul><div class="acts"><button class="pri" id="dClose">Đã hiểu</button></div>', () => { $('dClose').onclick = closeDlg; }); };
+
+/* speaker icon drawn as SVG (emoji fonts are missing on some devices) */
+function setSoundIcon(){
+    const b = $('soundBtn');
+    b.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'
+        + '<path d="M4 9h4l5-4v14l-5-4H4z" fill="currentColor"/>'
+        + (soundOn ? '<path d="M16.5 8.5a5 5 0 0 1 0 7M19.5 5.5a9 9 0 0 1 0 13"/>' : '<path d="M17 9l5 6M22 9l-5 6"/>') + '</svg>';
+    b.title = soundOn ? 'Tắt âm thanh' : 'Bật âm thanh';
+    b.setAttribute('aria-pressed', String(!soundOn));
+}
+
+function best(){ return +store.get(KEY.best) || 0; }
+function hud(){
+    $('score').textContent = S.score; $('stage').textContent = S.stage;
+    $('lives').textContent = S.lives; $('best').textContent = Math.max(best(), S.score);
+    hudFoes();
+}
+let foesShown = -1;
+function hudFoes(){
+    const n = G ? G.queue.length + G.enemies.length : 0;
+    if(n !== foesShown){ foesShown = n; $('foes').textContent = n; }
+}
+function say(t){ $('msg').textContent = t || ''; }
+function save(){ if(S) store.set(KEY.game, {stage: S.stage, score: S.score, lives: S.lives, power: S.power}); }
+
+function openDlg(html, init){ $('dlgBox').innerHTML = html; $('dlg').hidden = false; init && init(); }
+function closeDlg(){ $('dlg').hidden = true; $('dlgBox').innerHTML = ''; }
+function confirmBox(title, text, okText, ok){
+    openDlg('<h2>' + title + '</h2><p>' + text + '</p><div class="acts"><button id="dNo">Hủy</button><button class="pri" id="dYes">' + okText + '</button></div>', () => {
+        $('dNo').onclick = closeDlg;
+        $('dYes').onclick = () => { closeDlg(); ok(); };
+    });
+}
+$('dlg').addEventListener('click', e => { if(e.target === $('dlg')) closeDlg(); });
+
+/* ---------- sound (made in code, no files) ---------- */
+let ac = null, noiseBuf = null;
+function unlockAudio(){
+    if(!soundOn) return;
+    try{
+        if(!ac) ac = new (window.AudioContext || window.webkitAudioContext)();
+        if(ac.state === 'suspended') ac.resume();
+    }catch(e){ ac = null; }
+}
+function tone(freq, dur, type, vol, when, slide){
+    const t = ac.currentTime + (when || 0);
+    const o = ac.createOscillator(), g = ac.createGain();
+    o.type = type || 'sine';
+    o.frequency.setValueAtTime(freq, t);
+    if(slide) o.frequency.exponentialRampToValueAtTime(slide, t + dur);
+    g.gain.setValueAtTime(vol || 0.15, t);
+    g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+    o.connect(g).connect(ac.destination);
+    o.start(t); o.stop(t + dur + 0.02);
+}
+function noise(dur, vol, cutoff){
+    if(!noiseBuf){
+        noiseBuf = ac.createBuffer(1, ac.sampleRate, ac.sampleRate);
+        const d = noiseBuf.getChannelData(0);
+        for(let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+    }
+    const t = ac.currentTime, s = ac.createBufferSource(), f = ac.createBiquadFilter(), g = ac.createGain();
+    s.buffer = noiseBuf; f.type = 'lowpass'; f.frequency.value = cutoff;
+    g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+    s.connect(f).connect(g).connect(ac.destination);
+    s.start(t); s.stop(t + dur + 0.02);
+}
+function beep(kind){
+    if(!soundOn || !ac) return;
+    try{
+        switch(kind){
+            case 'tap':   tone(330, 0.05, 'triangle', 0.12); break;
+            case 'fire':  tone(900, 0.06, 'square', 0.035, 0, 300); break;
+            case 'wall':  tone(160, 0.05, 'square', 0.03); break;
+            case 'brick': noise(0.09, 0.12, 1400); break;
+            case 'steel': tone(1500, 0.06, 'triangle', 0.06); break;
+            case 'armor': tone(700, 0.07, 'square', 0.04, 0, 1100); break;
+            case 'boom':  noise(0.4, 0.22, 800); break;
+            case 'die':   noise(0.7, 0.26, 500); tone(260, 0.6, 'sawtooth', 0.05, 0, 50); break;
+            case 'base':  noise(1.1, 0.3, 350); break;
+            case 'bonus': [660, 990].forEach((f, k) => tone(f, 0.08, 'triangle', 0.08, k * 0.06)); break;
+            case 'pick':  [523, 784, 1047].forEach((f, k) => tone(f, 0.1, 'triangle', 0.1, k * 0.05)); break;
+            case 'life':  [523, 659, 784, 1047, 1319].forEach((f, k) => tone(f, 0.1, 'square', 0.05, k * 0.06)); break;
+            case 'start': [392, 523, 659, 784].forEach((f, k) => tone(f, 0.12, 'square', 0.04, k * 0.09)); break;
+            case 'level': [523, 659, 784, 1047].forEach((f, k) => tone(f, 0.14, 'triangle', 0.12, k * 0.08)); break;
+            case 'over':  [392, 330, 262, 196].forEach((f, k) => tone(f, 0.28, 'sine', 0.14, k * 0.2)); break;
+        }
+    }catch(e){}
+}
+
+/* ---------- start ---------- */
+setSoundIcon();
+new ResizeObserver(resize).observe(cv);
+const saved = store.get(KEY.game);
+if(saved && Number.isInteger(saved.stage) && saved.stage >= 1 && Number.isFinite(saved.score) && saved.score >= 0
+    && Number.isInteger(saved.lives) && saved.lives > 0 && Number.isInteger(saved.power) && saved.power >= 0 && saved.power <= 3){
+    S = {stage: saved.stage, score: saved.score, lives: saved.lives, power: saved.power};
+    startStage();
+    say('Tiếp tục ván đang chơi: màn ' + S.stage + '.');
+}else{
+    S = {stage: 1, score: 0, lives: LIVES, power: 0};
+    startStage();
+    if(!best()) setTimeout(() => $('helpBtn').click(), 50);
+}
+setPause();
+</script>
+</body>
+</html>

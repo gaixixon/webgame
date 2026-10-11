@@ -1,7 +1,7 @@
 {
   "name": "Web Games",
   "short_name": "Games",
-  "description": "Lines 98, Sudoku, Xếp khối: chơi được cả khi không có mạng.",
+  "description": "Lines 98, Sudoku, Xếp khối, Tank 1990: chơi được cả khi không có mạng.",
   "lang": "vi",
   "start_url": "./",
   "scope": "./",
