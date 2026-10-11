@@ -58,6 +58,16 @@ body.touch .pad{ display:flex; }
 .fire{ width:100px; height:100px; border-radius:50%; background:var(--danger); color:#fff; border:0; font-size:17px; font-weight:700;
        box-shadow:0 4px 0 rgba(0,0,0,.3), var(--shadow); touch-action:none; }
 .fire:hover{ background:var(--danger); }
+.stone{ position:relative; width:76px; height:76px; border-radius:50%; padding:0; font-size:13px; font-weight:700; line-height:1.15;
+        background:#6f757d; color:#fff; border:0; box-shadow:0 3px 0 rgba(0,0,0,.3), var(--shadow); touch-action:none; }
+.stone:hover{ background:#6f757d; }
+.stone small{ position:absolute; top:-2px; right:-2px; min-width:22px; height:22px; border-radius:11px; background:var(--accent); color:#fff;
+              font-size:12px; line-height:22px; }
+.stone:disabled{ opacity:.35; }
+.stone:disabled small{ background:var(--muted); }
+/* the bottom bar's emergency button is for computers; phones have the round one in the pad */
+body.touch .stonebar{ display:none; }
+@media (hover:none) and (pointer:coarse){ .stonebar{ display:none; } }
 .fire.on{ transform:translateY(3px); box-shadow:0 1px 0 rgba(0,0,0,.3); }
 
 .bar{ display:flex; flex-wrap:wrap; gap:8px; margin-top:12px; }
@@ -113,6 +123,7 @@ button.icon{ flex:0 0 auto; width:42px; padding:9px 0; }
                 <path class="a2" d="M50 91L37 74h26z"/><path class="a3" d="M9 50l17-13v26z"/>
             </svg>
         </div>
+        <button class="stone" id="stone" type="button" title="Khẩn cấp: biến tường quanh căn cứ thành đá 20 giây (1 lần mỗi màn)">Thành<br>đá<small>1</small></button>
         <button class="fire" id="fire" type="button">Bắn</button>
     </div>
 
@@ -121,6 +132,7 @@ button.icon{ flex:0 0 auto; width:42px; padding:9px 0; }
     <div class="bar">
         <button id="newBtn">Ván mới</button>
         <button id="pauseBtn" disabled>Tạm dừng</button>
+        <button id="stoneBtn" class="stonebar" title="Khẩn cấp: biến tường quanh căn cứ thành đá 20 giây, 1 lần mỗi màn (phím B)">Thành đá (1)</button>
         <button id="soundBtn" class="icon" title="Âm thanh" aria-label="Âm thanh"></button>
         <button id="helpBtn" class="icon" title="Luật chơi" aria-label="Luật chơi">?</button>
     </div>
@@ -138,9 +150,13 @@ button.icon{ flex:0 0 auto; width:42px; padding:9px 0; }
    breaks under fire, steel only under a 3-star tank's fire, water stops
    tanks but not shots, trees hide tanks. Tanks turn on a half-tile grid,
    so they slip into gaps easily.
+   Your tank always fires at full power: fast shots, 2 at a time, and
+   each one smashes a whole tile (2 squares deep), steel included.
    Enemies: basic, fast, fast-shooting and armoured (4 hits). The 4th,
-   11th and 18th flash red: hit one and a bonus appears (star, helmet,
+   11th and 18th flash red: hit one and a bonus appears (helmet,
    shovel, clock, grenade, tank).
+   Emergency (once per stage, key B): the brick ring round the base
+   turns to stone (steel) for 20 seconds.
    Stages 1-4 are drawn by hand, later ones are built from the stage
    number (the same stage always looks the same).
    Saved in this browser only (localStorage): the game (at the start of
@@ -152,7 +168,7 @@ const DX = [0, 1, 0, -1], DY = [-1, 0, 1, 0];      // up, right, down, left
 const EPS = 1e-4;
 const KEY = {game: 'tank.game', best: 'tank.best', sound: 'tank.sound'};
 const LIVES = 3, PER_STAGE = 20, MAX_ON_FIELD = 4;
-const PLAYER_SPEED = 48, SHOT = 150, SHOT_FAST = 240;
+const PLAYER_SPEED = 48, SHOT = 240, PLAYER_SHOTS = 2, STONE_TIME = 20;
 const ENEMY = {
     basic: {speed: 30, shot: 120, hp: 1, pts: 100, color: '#c3c7cc'},
     fast:  {speed: 62, shot: 130, hp: 1, pts: 200, color: '#7fd6ff'},
@@ -163,14 +179,13 @@ const ARMOR_COLORS = ['', '#c3c7cc', '#e0905a', '#d6c25b', '#6fbf73'];   // by h
 const SPAWNS = [[96, 0], [192, 0], [0, 0]];
 const HOME = [64, 192];
 const BONUS = {
-    star:    {name: 'Sao: bắn mạnh hơn (1 sao đạn nhanh, 2 sao bắn 2 viên, 3 sao phá được thép)'},
     helmet:  {name: 'Mũ: khiên chắn đạn 10 giây'},
     shovel:  {name: 'Xẻng: tường thép quanh căn cứ 18 giây'},
     clock:   {name: 'Đồng hồ: xe địch đứng im 10 giây'},
     grenade: {name: 'Lựu đạn: nổ hết xe địch đang có'},
     tank:    {name: 'Xe tăng: thêm 1 mạng'}
 };
-const BONUS_KINDS = ['star', 'star', 'helmet', 'shovel', 'clock', 'grenade', 'tank'];
+const BONUS_KINDS = ['helmet', 'shovel', 'clock', 'grenade', 'tank'];
 const FONT = 'system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif';
 
 /* stages: the left 7 tile columns of 13 rows (mirrored to the right).
@@ -196,7 +211,7 @@ const store = {
 const rand = (a, b) => a + Math.random() * (b - a);
 const cv = $('field'), ctx = cv.getContext('2d');
 
-let S;              // {stage, score, lives, power}: what carries from stage to stage
+let S;              // {stage, score, lives}: what carries from stage to stage
 let G = null;       // the stage being played (see startStage)
 let mode = 'ready'; // ready (waiting for a tap or key), play, pause, over
 let soundOn = store.get(KEY.sound) !== false;
@@ -277,8 +292,8 @@ function makeQueue(stage){
 
 function startStage(){
     G = {map: buildMap(S.stage), queue: makeQueue(S.stage), enemies: [], bullets: [], booms: [], pops: [], player: null, bonus: null,
-         phase: 'intro', phaseT: 1.6, spawnT: 0, spawnIdx: 0, freeze: 0, shovel: 0, respawnT: 0, baseDead: false, time: 0};
-    save(); hud();
+         phase: 'intro', phaseT: 1.6, spawnT: 0, spawnIdx: 0, freeze: 0, shovel: 0, stone: 1, respawnT: 0, baseDead: false, time: 0};
+    save(); hud(); setStone();
 }
 
 /* ---------- tanks ---------- */
@@ -316,10 +331,10 @@ function tryMove(t, d, dist){
 }
 
 function fire(t){
-    const max = t.enemy ? 1 : (S.power >= 2 ? 2 : 1);
+    const max = t.enemy ? 1 : PLAYER_SHOTS;
     if(G.bullets.filter(b => b.owner === t && !b.dead).length >= max) return false;
     const b = {x: t.x + 8 + DX[t.dir] * 6, y: t.y + 8 + DY[t.dir] * 6, d: t.dir, owner: t, player: !t.enemy,
-               speed: t.enemy ? t.shot : (S.power >= 1 ? SHOT_FAST : SHOT), steel: !t.enemy && S.power >= 3, dead: false};
+               speed: t.enemy ? t.shot : SHOT, dead: false};
     G.bullets.push(b);
     if(!t.enemy) beep('fire');
     collide(b);
@@ -360,6 +375,9 @@ function turn(e){ e.go = chooseDir(e); e.blockT = 0; e.patience = rand(0.15, 0.9
 /* ---------- shots ---------- */
 function boom(x, y, big){ G.booms.push({x, y, t: 0, dur: big ? 0.5 : 0.18, big}); }
 
+/* the base's ring while it is stone: nothing breaks it */
+const stoneRing = i => G.shovel > 0 && FORT.includes(i);
+
 /* the squares in front of a shot: the two it straddles (shots fly on the 8-unit lines) */
 function hitMap(b){
     const lx = b.x + DX[b.d] * 2, ly = b.y + DY[b.d] * 2;
@@ -372,10 +390,19 @@ function hitMap(b){
         if(i < 0 || i >= N * N) continue;
         const v = G.map[i];
         if(v === BRICK){ G.map[i] = EMPTY; hit = true; sound = sound || 'brick'; }
-        else if(v === STEEL){ hit = true; if(b.steel){ G.map[i] = EMPTY; sound = 'brick'; } else sound = 'steel'; }
+        else if(v === STEEL){ hit = true; if(b.player && !stoneRing(i)){ G.map[i] = EMPTY; sound = 'brick'; } else sound = 'steel'; }
         else if(v === BASE){ hit = true; if(!G.baseDead) destroyBase(); }
     }
-    if(hit){ boom(b.x, b.y, false); if(b.player && sound) beep(sound); }
+    // your shots smash a whole tile: the squares behind the ones hit go too (never the base, nor its stone ring)
+    if(hit && b.player){
+        const step = b.d % 2 === 0 ? DY[b.d] * N : DX[b.d];
+        for(const i of cells){
+            const j = i + step, edge = b.d % 2 ? Math.floor(j / N) !== Math.floor(i / N) : false;
+            if(i < 0 || i >= N * N || j < 0 || j >= N * N || edge || G.map[i] !== EMPTY) continue;
+            if(G.map[j] === BRICK || (G.map[j] === STEEL && !stoneRing(j))) G.map[j] = EMPTY;
+        }
+    }
+    if(hit){ boom(b.x, b.y, !!b.player); if(b.player && sound) beep(sound); }
     return hit;
 }
 
@@ -412,7 +439,7 @@ function hitPlayer(p){
     if(p.shield > 0) return;
     boom(p.x + 8, p.y + 8, true);
     G.player = null;
-    S.lives--; S.power = 0;
+    S.lives--;
     beep('die'); hud();
     if(S.lives <= 0) lose(); else G.respawnT = 1.2;
 }
@@ -433,14 +460,28 @@ function dropBonus(){
     G.bonus = {kind, x, y, t: 15};
     beep('bonus');
 }
+/* the ring round the base turns to stone (steel) for a while; a longer time already running is kept */
+function fortify(secs){ G.shovel = Math.max(G.shovel, secs); FORT.forEach(i => { G.map[i] = STEEL; }); }
+function emergency(){
+    if(mode !== 'play' || !G || G.stone < 1 || (G.phase !== 'play' && G.phase !== 'won')) return;
+    G.stone--;
+    fortify(STONE_TIME);
+    beep('stone'); setStone();
+}
+function setStone(){
+    const off = !G || G.stone < 1;
+    ['stone', 'stoneBtn'].forEach(id => { $(id).disabled = off; });
+    $('stone').querySelector('small').textContent = G ? G.stone : 0;
+    $('stoneBtn').textContent = 'Thành đá (' + (G ? G.stone : 0) + ')';
+}
+
 function takeBonus(){
     const k = G.bonus.kind, p = G.player;
     G.bonus = null;
     S.score += 500;
     G.pops.push({x: p.x + 8, y: p.y + 8, t: 0, text: '500'});
-    if(k === 'star') S.power = Math.min(3, S.power + 1);
-    else if(k === 'helmet') p.shield = 10;
-    else if(k === 'shovel'){ G.shovel = 18; FORT.forEach(i => { G.map[i] = STEEL; }); }
+    if(k === 'helmet') p.shield = 10;
+    else if(k === 'shovel') fortify(18);
     else if(k === 'clock') G.freeze = 10;
     else if(k === 'grenade'){ G.enemies.forEach(e => { if(e.spawnT <= 0) boom(e.x + 8, e.y + 8, true); }); G.enemies = G.enemies.filter(e => e.spawnT > 0); beep('boom'); }
     else if(k === 'tank') S.lives++;
@@ -471,6 +512,7 @@ function step(dt){
         // blinks brick / steel for its last 2 seconds, then the ring is brick again (and whole)
         const v = G.shovel <= 0 ? BRICK : G.shovel < 2 ? (Math.floor(G.shovel * 4) % 2 ? BRICK : STEEL) : STEEL;
         FORT.forEach(i => { G.map[i] = v; });
+        if(G.shovel <= 0) G.shovel = 0;
     }
 
     const p = G.player;
@@ -594,9 +636,9 @@ function drawTank(t){
     if(t.kind === 'armor'){ ctx.strokeStyle = shade(col, 0.6); ctx.lineWidth = 0.8; ctx.strokeRect(-3.2, -4.2, 6.4, 9.9); }
     if(t.kind === 'fast'){ ctx.fillStyle = shade(col, 0.6); ctx.fillRect(-4, 3.5, 8, 1); }
     ctx.fillStyle = shade(col, 0.7); ctx.beginPath(); ctx.arc(0, 1, 3.4, 0, 7); ctx.fill();
-    const bw = t.enemy ? (t.kind === 'power' ? 2.4 : 1.8) : 1.8 + (S.power >= 2 ? 0.8 : 0);
+    const bw = t.enemy ? (t.kind === 'power' ? 2.4 : 1.8) : 2.6;
     ctx.fillStyle = col; ctx.fillRect(-bw / 2, -8.5, bw, 8);
-    if(!t.enemy && S.power >= 3){ ctx.fillStyle = '#e5484d'; ctx.fillRect(-bw / 2, -8.5, bw, 1.6); }
+    if(!t.enemy){ ctx.fillStyle = '#e5484d'; ctx.fillRect(-bw / 2, -8.5, bw, 1.6); }
     ctx.restore();
     if(t.shield > 0){
         ctx.save(); ctx.strokeStyle = 'rgba(140,200,255,.9)'; ctx.lineWidth = 1; ctx.setLineDash([2.5, 2]); ctx.lineDashOffset = -G.time * 20;
@@ -610,7 +652,6 @@ function drawBonus(b){
     ctx.beginPath(); ctx.roundRect ? ctx.roundRect(x + 0.5, y + 0.5, 15, 15, 2.5) : ctx.rect(x + 0.5, y + 0.5, 15, 15); ctx.fill(); ctx.stroke();
     ctx.lineWidth = 1.4; ctx.lineCap = 'round';
     switch(b.kind){
-        case 'star': starPath(cx, cy + 0.5, 6, 2.5); ctx.fillStyle = '#f5b301'; ctx.fill(); break;
         case 'helmet':
             ctx.fillStyle = '#3a76d8'; ctx.beginPath(); ctx.arc(cx, cy + 2, 5.2, Math.PI, 0); ctx.fill(); ctx.fillRect(cx - 6.5, cy + 2, 13, 1.8); break;
         case 'shovel':
@@ -702,7 +743,7 @@ function run(){ if(!raf){ last = performance.now(); raf = requestAnimationFrame(
 function start(){
     if(mode !== 'ready') return;
     unlockAudio();
-    mode = 'play'; setPause(); beep('start'); say(isTouch() ? '' : 'Mũi tên / W A S D: đi · Phím cách: bắn · P: tạm dừng');
+    mode = 'play'; setPause(); beep('start'); say(isTouch() ? '' : 'Mũi tên / W A S D: đi · Phím cách: bắn · B: thành đá · P: tạm dừng');
 }
 function pause(){ if(mode !== 'play') return; mode = 'pause'; held = []; fireKey = firePad = false; padDir = -1; setPause(); }
 function resume(){ if(mode !== 'pause') return; unlockAudio(); mode = 'play'; setPause(); }
@@ -717,7 +758,7 @@ function wake(){ unlockAudio(); if(mode === 'ready') start(); else if(mode === '
 
 function newGame(){
     closeDlg();
-    S = {stage: 1, score: 0, lives: LIVES, power: 0};
+    S = {stage: 1, score: 0, lives: LIVES};
     startStage();
     mode = 'ready'; setPause();
     start();
@@ -749,6 +790,7 @@ document.addEventListener('keydown', e => {
         else if(!e.repeat){ fireKey = true; fireQueued = true; }
         wake();
     }
+    else if(e.code === 'KeyB'){ e.preventDefault(); emergency(); }
     else if(e.code === 'KeyP' || e.key === 'Escape'){ if(mode === 'play') pause(); else if(mode === 'pause') resume(); }
 });
 document.addEventListener('keyup', e => {
@@ -797,6 +839,8 @@ const fireUp = () => { firePad = false; fireBtn.classList.remove('on'); };
 fireBtn.addEventListener('pointerup', fireUp);
 fireBtn.addEventListener('pointercancel', fireUp);
 $('pad').addEventListener('contextmenu', e => e.preventDefault());
+$('stone').addEventListener('pointerdown', e => { e.preventDefault(); touched(e); wake(); emergency(); });
+$('stoneBtn').onclick = () => { $('stoneBtn').blur(); wake(); emergency(); };
 
 $('newBtn').onclick = () => {
     if(mode === 'over' || (S.score === 0 && S.stage === 1)) return newGame();
@@ -808,12 +852,14 @@ $('soundBtn').onclick = () => { soundOn = !soundOn; store.set(KEY.sound, soundOn
 $('helpBtn').onclick = () => { pause(); openDlg('<h2>Luật chơi</h2><ul class="rules">'
     + '<li>Lái xe tăng vàng bảo vệ căn cứ (ngôi sao ở giữa cạnh dưới) và tiêu diệt 20 xe địch để qua màn.</li>'
     + '<li>Điện thoại: bàn phím hướng bên trái, nút <b>Bắn</b> bên phải (giữ để bắn liên tục); chạm vào chiến trường để tạm dừng. '
-    + 'Máy tính: phím mũi tên hoặc W A S D để đi, phím cách để bắn, P tạm dừng.</li>'
-    + '<li>Tường gạch bắn vỡ được, tường thép thì không (trừ khi có 3 sao). Xe không đi qua nước nhưng đạn bay qua. Bụi cây che xe.</li>'
+    + 'Máy tính: phím mũi tên hoặc W A S D để đi, phím cách để bắn, B thành đá, P tạm dừng.</li>'
+    + '<li>Xe của bạn luôn bắn mạnh: đạn nhanh, bắn 2 viên một lúc, mỗi phát phá cả một ô tường, kể cả tường thép. Xe địch chỉ phá được gạch.</li>'
+    + '<li>Xe không đi qua nước nhưng đạn bay qua. Bụi cây che xe.</li>'
+    + '<li><b>Thành đá</b> (khẩn cấp, phím B): tường gạch quanh căn cứ biến thành đá trong 20 giây, không gì bắn thủng. Mỗi màn dùng được 1 lần.</li>'
     + '<li>Xe địch: thường 100 điểm, nhanh (xanh) 200, đạn nhanh (cam) 300, bọc thép 400 (cần 4 phát, đổi màu sau mỗi phát).</li>'
     + '<li>Xe địch nhấp nháy đỏ: bắn trúng thì hiện một món thưởng (500 điểm khi nhặt):<br>'
     + Object.values(BONUS).map(b => '• ' + b.name).join('<br>') + '</li>'
-    + '<li>Căn cứ bị bắn trúng hoặc hết mạng là hết ván. Mất mạng thì mất hết sao. Ván đang chơi tự lưu (từ đầu màn) trên máy này.</li>'
+    + '<li>Căn cứ bị bắn trúng hoặc hết mạng là hết ván. Ván đang chơi tự lưu (từ đầu màn) trên máy này.</li>'
     + '</ul><div class="acts"><button class="pri" id="dClose">Đã hiểu</button></div>', () => { $('dClose').onclick = closeDlg; }); };
 
 /* speaker icon drawn as SVG (emoji fonts are missing on some devices) */
@@ -838,7 +884,7 @@ function hudFoes(){
     if(n !== foesShown){ foesShown = n; $('foes').textContent = n; }
 }
 function say(t){ $('msg').textContent = t || ''; }
-function save(){ if(S) store.set(KEY.game, {stage: S.stage, score: S.score, lives: S.lives, power: S.power}); }
+function save(){ if(S) store.set(KEY.game, {stage: S.stage, score: S.score, lives: S.lives}); }
 
 function openDlg(html, init){ $('dlgBox').innerHTML = html; $('dlg').hidden = false; init && init(); }
 function closeDlg(){ $('dlg').hidden = true; $('dlgBox').innerHTML = ''; }
@@ -897,6 +943,7 @@ function beep(kind){
             case 'base':  noise(1.1, 0.3, 350); break;
             case 'bonus': [660, 990].forEach((f, k) => tone(f, 0.08, 'triangle', 0.08, k * 0.06)); break;
             case 'pick':  [523, 784, 1047].forEach((f, k) => tone(f, 0.1, 'triangle', 0.1, k * 0.05)); break;
+            case 'stone': noise(0.3, 0.2, 300); [196, 262, 392].forEach((f, k) => tone(f, 0.16, 'square', 0.05, 0.05 + k * 0.08)); break;
             case 'life':  [523, 659, 784, 1047, 1319].forEach((f, k) => tone(f, 0.1, 'square', 0.05, k * 0.06)); break;
             case 'start': [392, 523, 659, 784].forEach((f, k) => tone(f, 0.12, 'square', 0.04, k * 0.09)); break;
             case 'level': [523, 659, 784, 1047].forEach((f, k) => tone(f, 0.14, 'triangle', 0.12, k * 0.08)); break;
@@ -910,12 +957,12 @@ setSoundIcon();
 new ResizeObserver(resize).observe(cv);
 const saved = store.get(KEY.game);
 if(saved && Number.isInteger(saved.stage) && saved.stage >= 1 && Number.isFinite(saved.score) && saved.score >= 0
-    && Number.isInteger(saved.lives) && saved.lives > 0 && Number.isInteger(saved.power) && saved.power >= 0 && saved.power <= 3){
-    S = {stage: saved.stage, score: saved.score, lives: saved.lives, power: saved.power};
+    && Number.isInteger(saved.lives) && saved.lives > 0){
+    S = {stage: saved.stage, score: saved.score, lives: saved.lives};
     startStage();
     say('Tiếp tục ván đang chơi: màn ' + S.stage + '.');
 }else{
-    S = {stage: 1, score: 0, lives: LIVES, power: 0};
+    S = {stage: 1, score: 0, lives: LIVES};
     startStage();
     if(!best()) setTimeout(() => $('helpBtn').click(), 50);
 }

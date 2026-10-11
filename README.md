@@ -40,10 +40,11 @@ Everything is kept in the browser only (`localStorage`): the game in progress (r
 ## Tank 1990 (Battle City)
 
 - Drive the yellow tank, guard the base (the star at the bottom) and destroy the 20 enemy tanks of each stage. The game ends when the base is hit or the 3 lives are gone.
-- Brick breaks under fire, steel does not (except with 3 stars), water stops tanks but not shots, trees hide tanks. Stages 1–4 are drawn by hand; later stages are built from the stage number, so each always looks the same.
+- Your tank always fires at full power: fast shots, 2 at a time, each one smashing a whole tile (2 squares deep), steel included. Enemy shots only break brick. Water stops tanks but not shots, trees hide tanks. Stages 1–4 are drawn by hand; later stages are built from the stage number, so each always looks the same.
 - Enemies: basic (100), fast (200), fast-shooting (300) and armoured (400, 4 hits). Later stages bring more of the tough ones and they shoot more often.
-- The 4th, 11th and 18th enemy flash red: hit one and a bonus appears — star (faster shots, then 2 shots, then steel-breaking), helmet (shield), shovel (steel around the base), clock (enemies freeze), grenade (all enemies explode), tank (extra life).
-- Phone: direction pad and **Bắn** (fire) button under the field; tap the field to pause. Computer: arrows or WASD, Space to fire, P to pause.
+- The 4th, 11th and 18th enemy flash red: hit one and a bonus appears — helmet (shield), shovel (steel around the base), clock (enemies freeze), grenade (all enemies explode), tank (extra life).
+- **Thành đá** (emergency, once per stage): the brick ring round the base turns to stone for 20 seconds; nothing breaks it, not even your own shots.
+- Phone: direction pad, **Thành đá** and **Bắn** (fire) buttons under the field; tap the field to pause. Computer: arrows or WASD, Space to fire, B for Thành đá, P to pause.
 - The game is kept at the start of the stage reached, plus the best score and the sound setting (`localStorage`).
 
 Each game is one file in its folder (`lines98/`, `sudoku/`, `blocks/`, `tank/`) plus the shared ☰ game menu, [`menu.js`](menu.js), which also registers the offline service worker: plain HTML, CSS and JavaScript, no libraries. A new game needs an entry in `menu.js` (GAMES) and in `sw.js` (FILES).
