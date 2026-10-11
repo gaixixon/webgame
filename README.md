@@ -37,13 +37,7 @@ Everything is kept in the browser only (`localStorage`): the game in progress (r
 - On a phone the piece floats above your finger, with a preview of where it lands and which lines it clears. Undo one move.
 - **Gợi ý** (hint, key H): rings the piece to place and pulses its spot. It plans all the pieces left together (every order and position, beam search, plus an exhaustive check so it never misses a way to place them all), scoring points made and the board left (open space, no lone holes, room for big shapes). Following it, test games survived 360 pieces (~3,200 points) where random play lasted ~20.
 
-## 2048
-
-- Swipe (or arrow keys / WASD) to slide all tiles; two equal tiles that meet merge into their sum. A 2 (sometimes a 4) appears after each move.
-- Reach 2048 to win, then keep playing for a higher score. Undo one move, best score kept.
-- **Gợi ý** (hint, key H): an arrow shows the best move, found by looking a few moves ahead (expectimax) and scoring boards like the corner strategy. Following it reached 2048 in 6 of 6 test games.
-
-Each game is one file in its folder (`lines98/`, `sudoku/`, `blocks/`, `2048/`) plus the shared ☰ game menu, [`menu.js`](menu.js), which also registers the offline service worker: plain HTML, CSS and JavaScript, no libraries. A new game needs an entry in `menu.js` (GAMES) and in `sw.js` (FILES).
+Each game is one file in its folder (`lines98/`, `sudoku/`, `blocks/`) plus the shared ☰ game menu, [`menu.js`](menu.js), which also registers the offline service worker: plain HTML, CSS and JavaScript, no libraries. A new game needs an entry in `menu.js` (GAMES) and in `sw.js` (FILES).
 
 ## Run locally
 
