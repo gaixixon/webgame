@@ -46,7 +46,7 @@ body{ background:var(--bg); color:var(--text); font-family:system-ui,-apple-syst
 .stat .v{ font-size:20px; font-weight:700; font-variant-numeric:tabular-nums; line-height:1.2; overflow:hidden; text-overflow:ellipsis; }
 
 /* the playing field: 3:4, as large as the screen allows */
-.field{ display:block; width:min(100%, calc((100svh - 240px) * .75)); min-width:240px; aspect-ratio:3/4; margin:0 auto;
+.field{ display:block; width:min(100%, calc((100svh - 268px) * .75)); min-width:240px; aspect-ratio:3/4; margin:0 auto;
         background:var(--field); border:1px solid var(--field-line); border-radius:8px;
         touch-action:none; user-select:none; -webkit-user-select:none; cursor:none; }
 
@@ -57,7 +57,9 @@ button{ font:inherit; font-size:14px; color:var(--text); background:var(--btn); 
 button:hover{ background:var(--btn-hover); }
 button:disabled{ opacity:.45; cursor:default; }
 button.icon{ flex:0 0 auto; width:42px; padding:9px 0; }
-#msg{ min-height:20px; text-align:center; color:var(--muted); font-size:14px; margin-top:10px; }
+/* the strip under the field (with the hint text) also moves the paddle */
+#msg{ min-height:48px; display:flex; align-items:center; justify-content:center; text-align:center; color:var(--muted); font-size:14px;
+      padding:4px 8px; touch-action:none; user-select:none; -webkit-user-select:none; }
 
 /* phones: the field almost edge to edge (2px each side, clear of the notch in landscape) */
 @media (max-width:520px){
@@ -65,7 +67,7 @@ button.icon{ flex:0 0 auto; width:42px; padding:9px 0; }
     .top{ gap:6px; }
     .stat{ padding:5px 8px; }
     .stat .v{ font-size:18px; }
-    .field{ width:min(calc(100vw - 4px - env(safe-area-inset-left) - env(safe-area-inset-right)), calc((100svh - 180px) * .75));
+    .field{ width:min(calc(100vw - 4px - env(safe-area-inset-left) - env(safe-area-inset-right)), calc((100svh - 226px) * .75));
             margin-left:auto; margin-right:auto; position:relative; left:50%; transform:translateX(-50%); border-radius:0; border-left:0; border-right:0; }
 }
 
@@ -468,30 +470,32 @@ function setPause(){
 function movePaddle(x){ px = Math.max(pw / 2, Math.min(W - pw / 2, x)); }
 function fieldX(e){ const r = cv.getBoundingClientRect(); return (e.clientX - r.left) * W / r.width; }
 let drag = null;    // touch/pen: the paddle follows the finger's movement, from wherever it lands
-cv.addEventListener('pointerdown', e => {
-    unlockAudio();
-    drag = {id: e.pointerId, x: fieldX(e), px, t: performance.now(), moved: 0};
-    if(e.pointerType === 'mouse') movePaddle(fieldX(e));
-    try{ cv.setPointerCapture(e.pointerId); }catch(err){}
-});
-cv.addEventListener('pointermove', e => {
-    if(e.pointerType === 'mouse'){ movePaddle(fieldX(e)); if(drag) drag.moved = 99; }
-    else if(drag && e.pointerId === drag.id){
-        const x = fieldX(e);
-        drag.moved = Math.max(drag.moved, Math.abs(x - drag.x));
-        movePaddle(drag.px + (x - drag.x) * 1.15);
-    }else return;
-    if(mode !== 'play') draw();
-});
-cv.addEventListener('pointerup', e => {
-    if(!drag || e.pointerId !== drag.id) return;
-    const tap = e.pointerType === 'mouse' || (drag.moved < 8 && performance.now() - drag.t < 350);
-    drag = null;
-    if(!tap) return;
-    if(mode === 'ready') launch();
-    else if(mode === 'pause') resume();
-});
-cv.addEventListener('pointercancel', () => { drag = null; });
+for(const el of [cv, $('msg')]){   // the field and the strip under it
+    el.addEventListener('pointerdown', e => {
+        unlockAudio();
+        drag = {id: e.pointerId, x: fieldX(e), px, t: performance.now(), moved: 0};
+        if(e.pointerType === 'mouse') movePaddle(fieldX(e));
+        try{ el.setPointerCapture(e.pointerId); }catch(err){}
+    });
+    el.addEventListener('pointermove', e => {
+        if(e.pointerType === 'mouse'){ movePaddle(fieldX(e)); if(drag) drag.moved = 99; }
+        else if(drag && e.pointerId === drag.id){
+            const x = fieldX(e);
+            drag.moved = Math.max(drag.moved, Math.abs(x - drag.x));
+            movePaddle(drag.px + (x - drag.x) * 1.15);
+        }else return;
+        if(mode !== 'play') draw();
+    });
+    el.addEventListener('pointerup', e => {
+        if(!drag || e.pointerId !== drag.id) return;
+        const tap = e.pointerType === 'mouse' || (drag.moved < 8 && performance.now() - drag.t < 350);
+        drag = null;
+        if(!tap) return;
+        if(mode === 'ready') launch();
+        else if(mode === 'pause') resume();
+    });
+    el.addEventListener('pointercancel', () => { drag = null; });
+}
 
 const keys = {l: false, r: false};
 document.addEventListener('keydown', e => {
